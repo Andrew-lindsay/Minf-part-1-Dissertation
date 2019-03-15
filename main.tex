@@ -1023,7 +1023,7 @@ The main entry point for the for-loop-rejuvenation is the traversal \texttt{ForL
 
 \subsection{Loop header checks}
 
-The main traversal first checks if the loop is of iterator type, Figure \ref{fig:code-for-iter}, by checking the initialise statement, comparison expression and increment expression. If the Initialisation check, \texttt{ hasValidInitializer}, finds a valid intialiser with a object making a call to \texttt{begin}, the function extracts the name of the object and variable being assign setting the container name and iterator name, respectfully. The names of the container and the iterator are then used in the further checks of comparison and the iterator expressions. The check of the comparison expression, \texttt{hasValidComparitor}, required taking into account that containers, e.g List, Vector, utilise overloaded operators, both overloaded and non-overload not equals operators had to be checked. The increment check also had to account for the overloading of the \texttt{++} operator on the iterator extracted from the initialise statement.
+The main traversal first checks if the loop is of iterator type, Figure \ref{fig:code-for-iter}, by checking the initialise statement, comparison expression and increment expression. If the Initialisation check, \texttt{ hasValidInitializer}, finds a valid intialiser with an object making a call to \texttt{begin}, the function extracts the name of the object and variable being assign setting the container name and iterator name, respectively. The names of the container and the iterator are then used in the further checks of comparison and the iterator expressions. The check of the comparison expression, \texttt{hasValidComparitor}, required handling containers, e.g List, Vector, utilising overloaded operators, so both overloaded and non-overload not equals operators had to be checked, Figure \ref{fig:comp-operators}. The increment check also had to account for the overloading of the \texttt{++} operator on the iterator extracted from the initialise statement. 
 
 \begin{figure}[h]
     \centering
@@ -1032,22 +1032,26 @@ The main traversal first checks if the loop is of iterator type, Figure \ref{fig
         \centering
         % \includegraphics[]{}
         \caption{Not-Equals Comparison}
-        \label{}
+        \label{fig:for-cmp-neq}
         \vspace{0.40cm}
     \end{subfigure}
-
+    
     \begin{subfigure}[h]{\textwidth}
     % \includegraphics[]{}
     \caption{Overloaded Not-Equals Comparison}
     \centering
-    \label{}
+    \label{for-cmp-neq-overloaded}
     \end{subfigure}
 
     \caption{Not-equals Operators}
-    \label{Comparison Operators}
+    \label{fig:comp-operators}
 \end{figure}
 % checks on loop headers 2 
-The array-like container case and the statically allocated array case can share the same checks for a valid intialiser as well as for increments expression check which is the same check, \texttt{hasVaildIncrement}, utilised by iterator for loop case as it handles overloaded and standard \texttt{++} operators. The difference 
+The array-like container case and the statically allocated array case can share the same checks for a valid intialiser, \texttt{hasValidIndexInitialiser(..)}, and increment expression, \texttt{hasVaildIncrement}. The valid increment check can be the same check utilised by iterator for loop case as well as it handles overloaded and standard \texttt{++} operators. The shared check, \texttt{hasValidIndexInitialiser}, which ensures that the initial value of the indexing variable is 0 does not restrict to only allow standard integer zeros, it supports long integers, \texttt{0l, 0L}. The check also handles any implicit or explicit casting that can occur from the type utilised by the variable. The check rejects assigning the indexing variable any variation of a double value to simplify the process of extracting the value used to initialise it and compare it to zero.
+
+The differences between the array like container and the statically allocated array centre around the comparison check. For the array like container the check \texttt{hasVaild SizeComparitor(..)} , checks the index is compared against the container calling end, \texttt{COND.end()}. The decision was made to only support direct uses of the container, references  to them are rejected, so only the dot notation for method calls is checked. Unlike the iterator case the container is not present initialise the first time it is seen in the array like case is in the comparitor so it is here that the container is extracted to be utilises later in identifying the container in the loop body.
+
+The statically allocated array case required a unique approach to the comparitor check, \texttt{hasVaildBasicComparitor(..)}, as the index it compared to the size of the array before we have a reference to the container which is the focus of the for loop. To be able to check that the index is bounded by the size of the array, the array has to be known. So the hasVaildBasicComparitor function utilises the traversal ValidArrayIndexTraversal to scan the loop body of the for loop
 
 % Over arcing structure
     %  main traversal
