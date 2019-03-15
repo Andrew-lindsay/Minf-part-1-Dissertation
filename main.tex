@@ -1,0 +1,1087 @@
+\documentclass[bsc,frontabs,singlespacing,parskip,deptreport]{infthesis}
+%twoside
+% Used packages
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{minted}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\begin{document}
+% title{\vspace{-5.0cm} \centering{\includegraphics[scale=1]{path/to/image/file.png}} \\ Automated Source Code Rejuvenation}
+\title{\vspace{-5.0cm} Automated Source Code Rejuvenation \\ \vspace{1cm} \centering{\includegraphics[scale=0.75]{images/shield-crest-UoE.png}} }
+
+\author{Andrew Lindsay}
+
+\course{Master of Informatics}
+\project{{\bf MInf Project (Part 1) Report}}
+
+\date{\today}
+
+\abstract{
+
+}
+
+\maketitle
+
+\section*{Acknowledgements}
+Acknowledgements go here. 
+
+\tableofcontents
+
+%\pagenumbering{arabic}
+
+\chapter{Introduction} \label{Introduction}% 
+% Introduction and synopsis, 
+% Discussion of the work undertaken
+% make it clear what was completed
+% explain layout of report
+% remember to cite the 
+% \section{What is source code rejuvenation ?}
+
+% Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write. This code could be many years old but still requires maintaining as it is part of a larger system within a company. This kind of situation is common, and the code these developers have to maintain is colloquially referred to as legacy code. 
+
+% As legacy code could be considerably old, it may not utilise modern feature and practises. (NOT FINISHED WAS MOVED FROM BACKGROUND)
+
+% intro about why we need rejuvenation
+% what is rejuvenation 
+
+% \section{Why it is not Refactoring}  
+% main difference from refactoring is the willingness to change semantics of the code 
+
+\chapter{Background \& Related Work}
+%intro the 
+This chapter aims to give the reader the required foundational knowledge to understand the work presented in the report. C++ versions are briefly explained with relation to the features utilised in the transforms, noting where the features were first introduced. An overview of the compilation process, stating where it differs from a typical compilation process.
+The compiler framework Rose is discussed and contrasted with the Clang/LLVM compiler framework, with reflection on why Rose was chosen over Clang. Finally, related work in the area of rejuvenation and refactoring is presented.
+
+\section{C++: An Evolving Language}
+C++ has been in existence since 1985 with the first standard being introduced in 1998 referred to as C++98, with each of following standards being released after; C++03, C++11, C++14, C++17 \cite{CPP_VER}. Each version would bring new features to C++, ranging in size from smaller changes as the introduction of new keywords like \textit{final} or wide spanning changes such as "Template programming" \cite{TEMP_CPP}, the C++ approach to generic programming, being implemented. Some of the language features added were to remove the reliance on workarounds \cite{WORKARROUND_CPP} created by developers to overcome the limitations of the language. For example, the initialiser list functionality, Figure \ref{fig:vec-list}, for defining vectors was only added in C++11, previously it was only available to basic array types. 
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.5\textwidth}
+        \begin{minted}{C++}
+int a[] ={1,2,3,4,5};
+        \end{minted}
+        \caption{List initialisation of static array}
+        \label{fig:vec-list-a}
+    \end{subfigure}
+    
+    \begin{subfigure}[b]{0.5\textwidth}
+        \begin{minted}{C++}
+vector<int> b = {1,2,3,4,5};
+        \end{minted}
+        \caption{List Initailisation of vector, added in C++11}
+        \label{fig:vec-list-b}
+    \end{subfigure}
+    \caption{List initialisation}
+    \label{fig:vec-list}
+\end{figure}
+
+The aforementioned feature is a prime example of an area where rejuvenation can be used. All of the transforms presented in this report utilise features added in the C++11 standard meaning the resulting code would need to be later compiled with a minimum language specification of C++11. 
+% (talk about faeatures utilised in the specific transforms)
+
+% why the project targets C++
+% talk about the changes and additions between c++ version.
+
+\section{Compile Process and Abstract Syntax Trees}
+% compile process stages lexing, parsing, ast, semantic analyser, IR/AST generator
+A critical requirement of the project was processing the source code into a form where the rejuvenations could be applied. The resulting source code of the transformations was also required to resembled the original input source code, excluding areas affected by the transformation. Standard Compilers such as the GNU Compiler Collection (GCC) \cite{GCC} do not offer an accessible way to perform such transforms, while also generating source code as output. This is due to the compile process being designed to generate machine code as shown in Figure \ref{fig:comp_proc}.
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=\textwidth]{images/Compilation-process.png}
+    \caption{Standard Compilation Process}
+    \label{fig:comp_proc}
+\end{figure}
+% ast main form of code that is operated on 
+% has most info flexible for transformation of the output of any stage  
+% explain every step
+% An appropriate representation of the source code is required to perform the transformations.
+The source code takes many different forms as is it passed through the compile process shown above. Starting with text, then to a stream of tokens followed by a parse tree then a detailed abstract syntax tree, and finally machine code. 
+
+\begin{figure}[H]
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[height=7.2cm]{images/ast-example.png}
+        \caption{AST of the function}
+        \label{fig:ast-example-AST}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \begin{minted}{C++}
+    int main(){
+        int nums = 0;
+        return 0;
+    }
+        \end{minted}
+        \caption{Code the AST is representing}
+        \label{fig:ast-example-code}
+    \end{subfigure}
+    \vspace{-0.5cm}
+    \caption{Code along side the AST create by Rose Framework }
+    \label{fig:ast-example}
+\end{figure}
+
+An abstract syntax tree (AST) Figure \ref{fig:ast-example}, an output of the parsing phase, is a representation of the source code used to perform different types of analysis during the "Semantic Analysis" phase. These include type checking, name analysis among others used to create a detailed structure of the code. The AST does not feature any unnecessary punctuation of the input programming, and each node in the tree represents a component of the source code such as a "for loop" or a "variable declaration".
+
+% what is the structure of the tree, class hierarchy of nodes everything is decentdant from type SgNode. 
+
+The abstract syntax tree is also the last form of the source code where it is feasible to obtain a version of the original code. As once the AST has been passed to the code generator too much information is lost(cite), and the original source code cannot be reconstructed in any meaningful way. The AST also stores enough information about the types used by expressions and the scoping of variables for transforms that depend on this information to be executed. The previously mentioned properties make the AST the desirable format for transformations of the source code. 
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=\textwidth]{images/Compilation-process-src.png}
+    \caption{Source to Source Compilation}
+    \label{fig:comp_proc_src}
+\end{figure}
+
+A compiler that is capable of taking the AST, re-parsing it, and outputting source code is called a source-to-source compiler. These compilers can be utilised for many different tasks, such as parallelising "for loops" to make them run efficiently on multiple processor hardware. They are a small fraction of the total set of compilers but remain an evolving research area. Figure \ref{fig:comp_proc_src} shows a brief layout of how the rejuvenations are applied when utilising a source to source compile process. The specific source-to-source compiler framework utilised in the project is explored in the next section.
+
+% what is the output at the different stages explain them why abstract syntax tree is the most feasible output to operate on 
+% what is actually transformed ? (AST)
+% explored in the next section is the source to source compiler utilised in the project.
+
+\section{Chosen compiler framework: ROSE}
+% what is the rose compiler?
+\subsection{Rose framework}
+The Rose compiler \cite{ROSE} is an open source compiler framework from the Lawrence Livermore National Laboratory (LLNL), it has been utilised to build a range of source to source transformation and code analysis tools \cite{ROSE_TOOLS}. Rose supports a range of languages including Java, C, C++, FORTRAN, Python, and PHP. 
+% how does it achieve src to src compilation
+
+It utilises the EDG Front-end \cite{EDG} for parsing C/C++, from there it builds the abstract syntax tree for the source code. Due to the number of supported languages, this acts more like an internal representation than a direct AST for C++. Another feature separating Rose from compiler such as GCC is that is stores additional information such as comments in the AST. This is critical as we want to be able to output code that matches the original as closely as possible. Rose is able to facilitate the rebuilding of the source code through the unparser component of the framework. As the AST does not store formatting information such as uses of spaces or tabs this has to be specified by the user in formatting options for the output of the code.
+
+Tools utilising the Rose framework are built by first including the necessary headers which allows the programmer to call the rose frontend. The frontend takes the file name along with additional options and the framework parses and builds the AST of the source file, outputting a project object as the root of the AST, Figure \ref{fig:trav-proj}. The framework exposes a set of traversal methods which allow for the AST created by the frontend to be traversed. These methods include classical visitor pattern methods but also more simplistic but powerful traversals. 
+
+\subsection{Key Features}
+
+The framework offers a range of methods for accessing data about nodes during traversal, such as type information, links to the declaration of variables from uses, etc. Also supplied is a builder interface, SageBuilder, which simplifies the process of creating new components of code like variable declaration or methods call. These new components can be inserted into the tree by functions such as \textit{prependStatement} and \textit{insertStatementBefore}, which a part of the SageInterface module. 
+
+\subsection{Utilising Rose} \label{UTIL_ROSE}
+
+A simple description of how Rose is utilised is as follows. The transformations to be described in this report are built from extending existing traversal classes such as  \texttt{AstSimpleProcessing} \cite{ROSE_MANUAL} which, unlike the classical visitor traversals, only has a single function \texttt{void visit(SgNode* node)} instead of a function for every type of node. The \texttt{AstSimpleProcessing} is passed a arguement of \texttt{SgNode* node} which corresponds to the current node in the traversal and is passed with the most general possible type that all nodes inherit from SgNode. The programmer is then left to decipher what type the node actually represents. The traversal pass, representing the transform, is instantiated and is passed the root node of the AST. Then by utilising the facilities of the framework described above the rejuvenation is applied at appropriate areas during the traversal. Once the transformation pass is complete the root node of AST is passed to the backend of the rose framework to unparse it, reforming the rejuvenated AST into a human-readable form.    
+
+\begin{figure}[!h]
+    \centering
+    \begin{minted}{C++}
+    SgProject* project = frontend(argv)
+    SimpleVarDecTraversal traversal;
+    traversal.traverseInputFiles(project, preorder);
+    return backend(project);
+    \end{minted}
+    \caption{Framework utilised for traversal}
+    \label{fig:trav-proj}
+\end{figure}
+
+The result of writing the transforms in this manner is a single binary that required just the rose library to be installed to run. The tool produced can be operated similarly to other compilers by passing the file to be transformed from the command line.
+
+\begin{figure}[!h]
+    \centering
+    \begin{minted}{shell}
+            modernize-auto test.cpp -o rej-test.cpp
+    \end{minted}
+    \caption{Command line tool interface}
+    \label{fig:cmd-opt}
+\end{figure}
+
+% clearly state what is handled by the compiler and how transformations are written
+    % linking of the rose library 
+    % what is exposes to the programmer to traverse the AST
+    % what facilities it has for transforming the AST.
+    % how transform are made
+    % build system requires linking the 
+    
+\subsection{Why Rose over Clang}
+The Rose framework is not unique among compiler frameworks, others do offer source to source compiling functionality. The most notable of these would be Clang \cite{CLANG}, a compiler front-end for the C family of languages. It utilises the LLVM compiler infrastructure as a back-end and has been used to produce a number of analytical tools \cite{CLANG_TOOLS}. 
+
+Clang was not chosen for this project for a number of reasons, summary of these can be seen in Table \ref{tab:cmp-rose-clang}. As the table states the Clang front end utilises an immutable AST which means that no alteration to it can occur after parsing. Requiring changes the AST to be text base replacements of the source code, then to reparse the new source code to generate a new AST. This was seen as a disadvantaged compared to the Rose framework allowing direct modification of the AST but does increase the chance of bugs from wrongly manipulating memory. The ways in which clang and Rose framework how programmers to create tools differs. Rose framework allows the programmer to link against the rose framework library \textit{librose} to build the tool completely separated from the Rose framework source code. Clang however facilitates both building tools within the source tree and outside with the use of the \textit{libtooling} \cite{CLANG_TOOLS_LIB} but both methods introduce significant work compared to the Rose framework method \cite{ROSE_MAKE}.
+
+\begin{table}[h]
+    \begin{center}
+        \begin{tabular}{| l | l |}
+            \hline
+             \textbf{Rose Compiler}               & \textbf{Clang/LLVM}                 \\ \hline
+             Rewrites are applied directly to AST & Text bases rewrites (immutable AST) \\ \hline
+             Rewrites done by traversing AST      & AST matcher functions               \\ 
+             (Visitor Pattern)                    & (pattern matching)                  \\ \hline
+             No attempts at modernisation         & Clang-Tidy has modernisation checks \\ \hline
+             Good Documentation                   & Better Documentation                \\ \hline
+             Build standalone tools easily        & Tools Require work to build/maintain\\ \hline
+        \end{tabular}
+        \caption{Comparison between Rose and Clang }
+        \label{tab:cmp-rose-clang}
+    \end{center}
+\end{table}
+    
+% rewrite mechanism for clang seems to be changing and information and tutorial like information seems low 
+
+% offer classical visitor patterns but pushes use of matchers
+% The rewrite 
+
+% clang/llvm what is it, brief
+% does already have existing tools
+% ast rewrites already  
+
+\subsection{Limitation of Rose framework}
+In utilising Rose framework certain idiosyncrasies were found that introduce problems in transformed source code. The use of the EDG front-end for parsing C++ results in the expansion of templated types, meaning the default arguments that are usually hidden are present. Resulting in harder to read type signatures when the resulting AST was un-parsed as shown in Figure \ref{fig:temp-expand}. 
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                        std::vector<int> vec;
+        \end{minted}
+        \caption{Before expansion}
+        \label{fig:temp-expand-before}
+        \vspace{0.40cm}
+    \end{subfigure}
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+    std::vector< int  , class std::allocator< int  >  > vec;
+        \end{minted}
+        \caption{After expansion}
+        \label{fig:temp-expand-after}
+    \end{subfigure}
+    
+    \caption{Template Type Expansion: Before and After}
+    \label{fig:temp-expand}
+\end{figure}
+
+There are a number of smaller ways that the transformed source code can differ from the original code, most are harmless and are equivalent to the original. An example of this divergence are lists of initialisations of variables. The variables all being defined with the same type get broken up into individual declaration statements explicitly stating the type as shown in Figure \ref{fig:list-init}. Another smaller occurrence is the deference of variables with calls to methods, \texttt{(*p).q}, is replaced with the more direct arrow notation, \texttt{p->q}, which is fine as they are semantically the same but may annoy users if not expected. 
+
+\begin{figure}[!h]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                            int a, b, c;
+        \end{minted}
+        \caption{Before expansion}
+        \label{fig:list-init-before}
+        \vspace{0.40cm}
+    \end{subfigure}
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                        int a; int b; int c;
+        \end{minted}
+        \caption{After expansion}
+        \label{fig:list-init-after}
+    \end{subfigure}
+    \caption{List initialisation: Before and After}
+    \label{fig:list-init}
+\end{figure}
+
+As previously stated, the output style format of the code needs to be specified by the programmer, but the options exposed do not give much control over the desired output. Only allowing for the setting of indentation and if tabs or space are to be used. External tools know as code formatters or pretty printers are well established and are more likely a good choice to reformat the code after the transformation has been applied.
+
+\section{Related work}
+% number of tools, what they are for. areas that will be talked about 
+There exist a number of tools aiming to aide in the development of software by suggesting or implementing transformations. Code Re-factoring \cite{REFACTOR} is a well versed area with a lot of integration with modern development environments. Even though refactoring has a different underlying philosophy to altering code as discussed in Section \ref{Introduction} its mission is similar to this project. Another related tool is clang-tidy created by the Clang front-end developers that follow a similar ideology to altering the code as transforms presented in this project. Both refactoring approaches and clang-tidy are discussed in this subsection.
+
+\subsection{Clang-tidy}\label{sec:rw-clang-tidy}
+Clang-tidy \cite{CLANG_TIDY} is a clang tool that features numerous sets of static analysis checks for a variety of areas. These include checks for bug-prone code constructs, coherence to a wide range of coding conventions and checking for performance related issues. Clang-tidy also features a set of checks called modernize checks, that target the same style of rejuvenations as mentioned in this project. The clangs modernize checks assess where new C++11 and higher features could be used in place of other methods in the source code. The checks include the likes of "modernize-use-nullptr" which searches for uses of the old keyword \textit{NULL} and replaces them which the C++11 keyword \texttt{nullptr}.
+
+Most of the modernisation passes present in clang tidy focus on changes that do not drastically affect the structure of the code, but there are some which do. The modernize-convert-loop check \cite{FOR_CONVERT} for instance does detects "for loops" of the form \texttt{for( \\declaration; comparison; Increment)} and checks that they are valid to be transformed to "ranged for" of  form \texttt{for( declaration : container)}. Though most checks do not go as far as the loop convert in reconstructing code. As other check such as modernize-avoid-c-arrays \cite{ARRAY_CONVERT} exist, but it only detects the use of the C array and suggests to use standard library \textit{array} implementation. Modernize-avoid-c-arrays does not attempt to actively fix the problem as the documentation states "it is to difficult to ensure a safe transformation" \cite{ARRAY_CONVERT}. The level of rejuvenation possible is a wider field than just what clang tidy is targeting. Transforms that raise the level of abstraction of user-defined data structures like linked list are yet to be implemented in a modernisation check, as well as other transforms that require spanning checks of the AST.   
+
+\subsection{IDE: tools}
+The motivation of code refactoring is centred around creating cleaner and more accessible code without changing the underlying semantics. In contrast, rejuvenetaion is willing to change what the code actually does to get closer to the programmers intent. Even though they are ideologically different it is still of interest to discuss how far refactoring goes and how people utilise it.
+
+Most modern integrated development environments feature refactoring options that aim to aid developers to increase the maintainability, and reduce the complexity of there code. The Popular code editor Intellij IDEA \cite{IDEA} includes refactoring methods such as field encapsulation \cite{IDEA_ENCAP} for classes which creates functions called getters and setters to facilitate access to the variable. Another refactoring method Intellij offers is extract varaiable \cite{IDEA_EXTRACT} method which can simplify the complex conditions for "if statements" by extracting and storing parts of the condition in to variables to improve readability.
+
+Refactoring, as shown by the condition extraction, does not shy away from altering code, even if this means creating new variable or functions in the case of function extraction. The extent to which refactoring goes is only to change the structure, not the underlying behaviour of the code, so the goals  of the two approaches, rejuvenation and refactoring, are distinct. The level of integration refactoring has with IDEs has helped it become widely adopted by programmers and if rejuvenation tools are to become part of the development process, it will be essential to integrate in to IDEs as well.
+
+\section{Summary}
+
+% ease of use for developers, interactive
+%  extend of actually code manipulation 
+
+\chapter{Transform to Utilise Automated Type Inference}
+The Chapter discusses the first of the rejuvenations of this report, which promotes the use of type inference. An explanation of the rejuvenation will be given along with the break down of the conceptual challenges the transform presents. An overview of the implementation is presented showing how the rejuvenation utilised the Rose framework to realise the transform. Finally, an evaluation of the pass and where improvements could be made is used to conclude.
+
+\section{Introduction}
+Type inference is a mechanism that enables the type of an expression to be deduced without needing to be explicitly stated,. In the case of variable declaration \texttt{int x = 5}, this could become simply \texttt{x = 5}. Type inference has the benefit of reducing programmer time spend typing laborious type signature, that may even be redundant based on the context surrounding the code. 
+
+%  why it is good
+
+Starting with the C++11 standard, the language introduced type inference through the use of the \texttt{auto} keyword. This implementation of type inference it limited compared to other languages such as Haskell, as C++ \texttt{auto} can only be used for variable declarations \cite{HASK_TYPE_INF}. Unlike C++, Haskell's classical Hindley-Milner type inference allows for the complex type signatures of functions to be inferred from the body of the function. Figure \ref{fig:auto-type} is an example  showing  how some type signatures can be quite arduous, while not displaying any more useful information than stating the variable is an iterator.
+
+\begin{figure}[!h]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+std::vector<std::string>::iterator iterName = studentNames.begin();
+        \end{minted}
+        \caption{Standard type signature}
+        \label{fig:auto-type-before}
+    \end{subfigure}
+    
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                auto iterName = studentNames.begin(); 
+        \end{minted}
+        \caption{Infered type signature}
+        \label{fig:auto-type-after}
+    \end{subfigure}
+    \caption{Example of type inference using the \texttt{auto} keyword}
+    \label{fig:auto-type}
+\end{figure}
+
+The rejuvenation aims to transform type signatures of variable declarations to use the \texttt{auto} keyword in their place. Also ensuring that the variable's type is the same as stated by the original programmer without \texttt{auto} inferring, by mistake, a different type.
+
+% what is type inference how does c++ achieve it
+% why the transform makes sense
+
+\section{Conceptual challenges and solutions}
+% what does the transformation target
+% what exact type of declarations was altered / the focus of transform
+    % variable declarations, 
+The first conceptual problem that had to be addressed was the scope of the transform, which types of statements would be deemed appropriate for transformation. As stated earlier, C++11 only allows for \texttt{auto} keyword to be used only on variable declarations but this is still a wide expanse of constructs. There exists a number of ways to initialise variables in C++, including initialiser lists for arrays, constructor initialiser, braced initialiser. The focus will be on assign initialiser as constructor initialisers are not supported by C++ \texttt{auto}, and initialiser lists are not altered as type wrongly inferred will be of \texttt{std::initializer\_list<T>}. Assign initialiser are variable declarations that use an equals operator and feature a right-hand side expression, as shown in Figure \ref{fig:ass-var}.
+
+\begin{figure}[!h]
+    \begin{minted}{C++}
+            vector<string> names = vector<string>(10);
+    \end{minted}
+    \caption{Assignment intitialiser variable declaration}
+    \label{fig:ass-var}
+\end{figure}
+
+% What had to be ignored 
+    % initialiser lists
+    % Class fields
+\subsection{Type Modifiers}
+In approaching the problem it was essential to take type modifier into account as they play an important roll in specifying types. These modifiers are the terms that add additional meaning and constraints on to uses of variables. Modifiers include \textit{const}, ampersand operator \&, Pointer astrix *, \textit{volatile}. The transform had to handle each of these modifiers carefully to preserve the proper meaning of the code. 
+
+Const and reference operators need to be kept the same if utilised, as they apply different properties to the type that \texttt{auto} can not infer from the right-hand side. How this type information is preserved is discussed in the implementation section. 
+
+\subsection{Pointers}
+% pointer and the decision on how to handle them 
+There was a decision to be made with the use of pointers in the type annotation as \texttt{auto} is capable of inferring the use of pointers, but also capable of having them present alongside as shown in Figure \ref{fig:ptr_type_inf}. It was decided that pointers should always be inferred by \texttt{auto} due to the cleaner look of the type signature. 
+
+\begin{figure}[!h]
+    \centering
+    \begin{minted}{C++}
+                auto ptrToCat = getCatObj();
+                auto *prtToCat = getCatObj();
+    \end{minted}
+    \caption{Equivalent type signature with pointer inference}
+    \label{fig:ptr_type_inf}
+\end{figure}
+
+% \begin{figure}[!h]
+%     \centering
+%     \begin{subfigure}[h]{\textwidth}
+%         \centering
+%         \begin{minted}{C++}
+%                 auto ptrToCat = getCatObj();
+%         \end{minted}
+%         \caption{Version 1}
+%         \label{fig:ptr_type_inf-1}
+%         \vspace{0.40cm}
+%     \end{subfigure}
+%     \begin{subfigure}[h]{\textwidth}
+%         \centering
+%         \begin{minted}{C++}
+%                 auto *prtToCat = getCatObj() 
+%         \end{minted}
+%         \caption{Version 2}
+%         \label{fig:ptr_type_inf-2}
+%     \end{subfigure}
+%     \caption{Equivalent type signature with pointer inference}
+%     \label{fig:ptr_type_inf}
+% \end{figure}
+
+% const and reference operators
+%  what about them that they are still there
+
+\subsection{Implicit Casting} \label{sect:con-impl-cast}
+% implicit casting needs to be handled
+An important component of the C++ type system is implicit casting, which raises problems when inferring types with \texttt{auto}. An implicit cast is created when the type signature does not match the type presented on the right-hand side of the assign statement, and the typecasting is valid. If \texttt{auto} was applied blindly in this situation then the casting would be lost and only the type expressed on the right-hand side would be inferred. These changes can be quite subtle, as shown in Figure \ref{fig:implicit-cast}. The unsigned type signature will not be inferred from the integer on the right, as its base type is \texttt{int} not \texttt{unsigned int}. The use of type \texttt{int} instead of \texttt{unsigned int} could lead to unexpected overflow errors, which were not previously there. The situation could be rectified by adding an explicit cast on to the right-hand side but this would not benefit the readability of the code as the type has just moved from the left-hand side to the right. Therefore it was decided that variable declarations using implicit casts would not have the type signatures altered.   
+
+\begin{figure}[!h]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                unsigned int counter = 0;
+        \end{minted}
+        \caption{Before: type declared, unsigned int}
+        \label{fig:implicit-cast-before}
+        \vspace{0.40cm}
+    \end{subfigure}
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                auto counter = 0; 
+        \end{minted}
+        \caption{After: type inferred, signed int}
+        \label{fig:implicit-cast-after}
+    \end{subfigure}
+    \caption{Hazards of implicit casting, unsigned type \\ lost when inferring with auto}
+    \label{fig:implicit-cast}
+\end{figure}
+
+% extent to which types are replaced
+    % any var dec could be changed disregarding the length of the type.
+\subsection{Scope of Transformation}\label{sec:auto-scop-trans}
+A naive approach for applying the \texttt{auto} rejuvenation is to replace every valid variable declaration's type with \texttt{auto}, but this is not always advisable. As some types are short, such as the inbuilt types, it would not improve the code in a measurable way if these type annotations were replaced. Also, a factor to be considered is that type annotations offer insightful information that is not immediately revealed from the right-hand side of the declaration. With the use of \texttt{auto}, it may require more work by the programmer to decipher what the code is trying to do. This is not an intrinsic problem with using \texttt{auto} but a result of not using appropriate names for variables and objects when declaring them, the problem can be mitigated by utilising good coding conventions. 
+
+The approach used for the conditions to replace type signatures is naive, aiming to replace all instances where applicable. The slightly more advanced approach implements a lower bound on the character length of the type to be replaced. So that shorter types do not end up unnecessarily changed or even made long in the case of type \texttt{int}.
+
+\section{Implementation}\label{sec:auto-Impl}
+
+\subsection{Valid Variable Declaration}
+The rejuvenation is centred around a single pass of the AST with only the input files being traversed, not the files present in include statements. After the source code is parsed by the Rose framework, line 1 of Figure \ref{fig:trav-proj}, the AST is traversed by the VarDecTraversal class which inherits from the AstSimpleProcessing discussed in Section \ref{UTIL_ROSE}. The traversals \texttt{visit} method is passed each node in the AST and is the main entry point for the auto modernisation transforms that was build.
+
+The desired node as a starting point for the transform is the \textit{InitializedName} node Figure \ref{fig:var-dec-ast}, as this is the node that stores the associated name of a variable declaration along with its type. The framework features a run time type information (RTTI) system for deciding if nodes are of specific types, such that if we wanted to find if the current node is a \textit{SgInitializedName} we use the \textit{isSgInitializedName(node)} function.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=6cm]{images/ast-var-dec.png}
+    \caption{AST of variable declaration, \texttt{int nums = 0}}
+    \label{fig:var-dec-ast}
+\end{figure}
+
+After the current node is checked to be of type IntializedName, the transform checks for a number of other properties. Nodes that are generated by the compiler, instantiated template code, could include IntializedName nodes so these are filters out by checking the method \texttt{isCompilerGenerated()} of the node. The IntializedName node stores a pointer to the associated initialiser type, this is checked to ensure it is of type SgAssignInitializer ensuring it does feature an expression on right-hand side of an equals operator. A further restriction on \texttt{auto} is that is cannot be utilised for non-static class fields. So the parent of the Variable Declaration, which is the parent to the InitializedName Figure \ref{fig:var-dec-ast}, is checked to ensure the variable declaration does not take place in class as a field. The parent of the InitialisedName node is checked to be a Variable Declaration as a sanity check to ensure InitalisedName is not associated with anything but a declaration. 
+
+Once the variable declaration has been found, call an internal method of the InitialisedName node to see if it is already utilising \texttt{auto}, and return from the function if true, moving on to the next node in the AST. 
+
+It is at this stage in the process implicit casting of types can be checked. As the framework utilises SgCastExpr nodes to express the use of casting in the code, we can check the right-hand side of the assign statement for the presence of this node. To check what kind of expression is on the right-hand side  requires using the \texttt{get\_operand()} of the AssignInitiailizer node to return the root expression node. To be able to differentiate between implicit and explicit casts the transform has to not only check that the node is SgCastExpr, but that it is also compiler generated. As the compiler inserts the SgCastExpr to head of the expression tree in the case of implicit cast. If both conditions are met the transform returns from the visit function, and moving to the next variable declaration without altering the type signature as stated in Section \ref{sect:con-impl-cast}. 
+
+% pseudocode implicit cast 
+
+\begin{figure}[!h]
+    \centering
+    \begin{minted}{python}
+    rhsExpression = initializerAssignNode->get_operand()
+    if (isCastNode(rhsExpression) and 
+            rhsExpression->isCompilerGenerated() )
+        return;
+    \end{minted}
+    \caption{Psuedocode for implicit casting check}
+    \label{fig:cast-check-code}
+\end{figure}
+
+% 0. addition traversing only the input files !
+% 1. filtering the nodes !
+% 4. checking for auto already !
+% 3. filtering of implicit cast checking for compiler generators 
+
+\subsection{Transforming Type Declaration}
+After we have performed all the above checks the variable declaration is allowed to be transformed. We replace the existing type with is a SgTemplateType initialised with the name \texttt{auto}, as there does not exist a type for \texttt{auto} within the SgType class structure. 
+
+The transform cannot blindly replace the existing type with \texttt{auto} as doing so would remove all additional type information, \textit{const}, pointers, and other keywords. Types that are built up of the previously mentioned types are called nested types, as they store a pointer to the type that is stored inside of it, with the deepest type being the base type.
+% add figure
+
+So to distinguish between the cases where nested types are used the framework provides a method \textit{containsInternalTypes()} which returns a boolean and is present in all type nodes. This was used in conjunction with the \textit{get\_type()} of the InitializedName node to get the type of the variable being declared. For the case where the type of the IntitialisedName node did not contain nested types, we could simply replace the pointer to the type node with the \texttt{auto} SgTemplateType. 
+
+\begin{figure}[H]
+    \centering
+    \begin{minted}{python}
+    if ( varDecType->containsInternalTypes())
+        typeCopy = varDecType->copy()
+        setbaseType(typeCopy, SgTemplateType("auto"))
+        typeCopy->stripType(POINTER_TYPE)
+        assignNode->set_type(typeCopy)
+    else
+        assignNode->set_type( SgTemplateType("auto"))
+    
+    \end{minted}
+    \caption{Psuedocode: Setting type Declaration}
+    \label{fig:auto-cases-nested-types}
+\end{figure}
+
+In the case of nested types, the code is not as simple, as the types could be nested to an arbitrary depth. The framework does offer \textit{find\_base\_type()} and \textit{set\_base\_type()} methods for types, but utilising them directly resulted in unexpected behaviour. If the methods are utilised directly then any expression that also utilises the type will have its type replaced with the \texttt{auto}. For example, if a variable \textit{b} is a reference to a variable \textit{a} with the type of \textit{a} being SgTypeInt then the base type of \textit{b}, SgTypeInt, is actually linked to \textit{a} and is shared. This comes about due to the types acting more as a graph leading to sharing of type information. So if the base type of \textit{b} is changed then \textit{a} is also changed. In the case shown in Figure \ref{fig:type-con-bug} this is not harmful but this can also occur for function parameters. So in changing a variable declaration to \texttt{auto} a function parameter also linked to that base type will also change to using \texttt{auto}, \texttt{foo(auto x, string b)}, which is an invalid use of \texttt{auto}.
+
+\begin{figure}[!h]
+    \begin{minted}{C++}
+                        int a = 10;
+                        int &b = 5;  
+    \end{minted}
+    \caption{Type connection in AST/Graph structure}
+    \centering
+    \label{fig:type-con-bug}
+\end{figure}
+
+\subsection{Locating Base Type}\label{sec:auto-loc-base-type}
+
+As variables, functions, etc can hold pointers to the same type node in a graph like structure type nodes cannot be changed without unintentionally altering other statement that point to them. So to void this problem from occurring the transform had to replicate type nodes, which could be nested, before altering them. The framework does feature facilities for performing a deep copy which copies entire subtree not just the first node of the AST. As the type information is not represented in the AST model, and is only present in larger graph structure of the program this deep copy has to be manually applied at each nested type to build a cop, see Figure \ref{fig:code-set-type}. 
+
+This approach of recursing down the nested type, and copying each node to build a complete copy is achieved by a function \texttt{setBaseType()}, Figure \ref{fig:code-set-type}, created for the transform. A while loop checks if the type contains internal types at each stage build the copied type as it goes. At the deepest level, the type without any further nesting the type is replaced with the \texttt{auto} type. 
+
+% remember to strip pointers
+
+\begin{figure}[H]
+    \begin{minted}{python}
+    def setBaseType(typeVar, newBaseType)
+        while (typeVar->containesInternalTypes()):
+            prev_type = typeVar
+            typeVar = typeVar->get_interal_type()
+            typeVar = typeVar->copy()
+            prev_type->set_type(typeVar)
+        prev_type->set_type(newBaseType)    
+            
+    \end{minted}
+    \caption{Pseudocode: setBaseType}
+    \centering
+    \label{fig:code-set-type}
+\end{figure}
+
+Upon returning from the \texttt{setBaseType()} function the type passed to it as \texttt{typeVar} is now a copy of the original type with the deepest type set to \texttt{auto}. The copied type with \texttt{auto} set still has all of its additional type modifiers, including pointers which \texttt{auto} could helpfully infer. So before the altered type replaces that of variable declaration the pointers are stripped from the type, Figure \ref{fig:cast-check-code}. 
+
+% ----------------------------------------------------------------
+% 2. build replacement type 
+% 5. main checking for internal types
+% 6. if no internal types replace type 
+%   failure to find base type -_- 
+%   graph structure of types
+%       functions parameters
+% 7. if yes why do we need to recurse the data structures
+    % recursive function to base type
+% ------------------------------------------------------------------
+
+% How the transform was implemented 
+    % template type without
+
+
+% compiler generated code 
+
+% problems faced 
+    % recursive type definitions 
+    % linking of type information present in the memory graph (function args changing type)
+    
+    
+% notation of internal types linking in a graph structure 
+
+\section{Evaluation} % Critical evaluation of own work
+
+\subsection{Problems encountered in development}
+% intro link back
+% type system how it was hard to work with how it was finally figured out (graph) 
+
+The Implementation of the transform portrayed in Section \ref{sec:auto-Impl} is significantly smaller than the loop rejuvenation discussed in Section \ref{chp:loop-transform}. but this does not mean the implementation was anymore straight forward. As the transform focused on altering types, the complex nature of the C++ type system meant many problems faced did not have a clear root cause or solution. 
+
+A major hurdle faced when trying to work with nested types was discussed in Section \ref{sec:auto-loc-base-type}, with the linking type nodes across different uses. The effects of altering types of variable declaration, function arguments or other structures directly through pointers to type nodes was extremely hazardous due to this linking. The problems in debugging this incorrect type alteration was increased due to rose documentation not stating how types were utilised in the AST. The connection between types and where they are used was only made clear when the graph representation of the source code was viewed. The graph of the source code features extra attribute and links which includes type nodes and there connection not shown in the normal AST. The graphs can be created by a command line tool built by the Rose Framework developers \textit{dotGeneratorWholeASTGraph} \cite{ROSE_TUT} which takes the source code and create a dot file that can displayed as a graph.
+
+Even those the Rose framework has functions and methods for retrieving and altering types, it is clear they are not of a high enough abstraction to be use with out close consideration.
+
+\subsection{Limitations and critique of transform} 
+
+% usefulness, transform may not really aide in readability, changing types on normal variables may make them more cryptic, use of auto may come down to a subjective choice. 
+The transform was designed to target every assign type variable declaration without much though to the usefulness of changing the type to \texttt{auto}. This changing of the type can be undesirable in many cases as the type could give much needed context to the variable being declared (example). 
+
+As stated in Section \ref{sec:auto-scop-trans}, strict adherence to a coding convention for naming variable could allow for auto to infer the type without decreasing the readability. However, if this coding convention required manual changes to the code it would completing nullify the automated aspect of the rejuvenation. There could be an automated process to assess if the variable name has enough information represented in the type but this would be a very complex solution. A simpler and more effective approach would be to restrict or reduce the scope of the transform to places where type information is definitely duplicated.
+
+% overly applied transform, many cases not yet checked which could cause problems as transform it not conservative in nature
+As stated above the transform is not very conservative in nature as it tries to alter every variable declaration. It was seen during testing on real world code examples that this is a very error prone approach as the complexity of the C++ language leads to many unforeseen cases where the transform fail unexpectedly. To create a production ready version of the tool in this form would require significant testing or alter it to target more specific use cases of \texttt{auto} type inference.
+
+\subsection{Comparison to Clang-tidy \& Testing }
+
+% intro Of these modernize checks the modernize-use-auto \cite{}
+As discussed in related work, Section \ref{sec:rw-clang-tidy}, clang-tidy features many static analysis checks with some categorised as modernize checks. The modernize-use-auto \cite{CLANG_AUTO} is the most relevant to compare against as it also tries to promote the use of type inference using auto. Clang-tidy's modernize-use-auto does differ in several significant ways as it does not try to transform all variable declarations. It chooses to focus on transforming variables that are declaring iterators of the standard container classes, e.g list, vector. Also replaces types with auto when the variable being declared uses the new operator on the right hand, Figure \ref{fig:code-new-vardec}. The final case it can transform is when any form of casting is utilised such as old c-style casting, or the newer templated function style casting, Figure \ref{fig:code-modern-cast}.
+
+\begin{figure}[H]
+    \begin{minted}{c++}
+                NameOfType* ptrToObj = new NameOfType(); 
+    \end{minted}
+    \caption{Varible Declaration using \texttt{new} operator}
+    \centering
+    \label{fig:code-new-vardec}
+\end{figure}
+
+\begin{figure}[H]
+    \begin{minted}{c++}
+    unsigned int res = static_cast<unsigned int>(getCount());
+    \end{minted}
+    \caption{Example of Modern C++ cast}
+    \centering
+    \label{fig:code-modern-cast}
+\end{figure}
+
+The differences in the targets of the transforms complicates the comparison of the two tools. In contrasting the two approaches, clang takes a more focused approach which lends its self to more controlled transformation,  mitigating problems with unexpected code being transformed.
+
+For testing of the auto-rejuvenation tool, produced by in the project, benchmarks were selected from real code bases as well from the benchmarks already present in the SPEC CPU benchmarks \cite{}. The Benchmarks include the single header libraries Nanoflann \cite{} and Swarmz \cite{} as well as files included in the 541.leela\_r \cite{SPEC_LEELA}, and 531.deepsjeng\_r \cite{SPEC_DEEPSJENG}.
+ 
+The data collected from running auto-rejuvenation and clang-tidy's modernize-use-auto on the benchmarks, Table \ref{tab:auto-tool-benchmark-res}, shows the disparity in two approaches. The effect of modernize-use-auto's selective cases for transformation can be seen by its near zero number of transform on the benchmark. Even with this low hit rate it does not say much about the effectiveness of the tool as it is aiming to help only where it knows it can reduce type duplication. In comparison the high hit rate of the auto tool is also misleading as a sign of effectiveness, as many of the transformations are on simple base type definitions such as \texttt{int} or \texttt{bool}. Transforming basic types does not increase readability of the code, and for types like \texttt{int} actually increases the length of the type signature. There also is the problem of if every variable should utilises \texttt{auto} which is most likely not the case, but individual case by case checking is complex.   
+
+% The selective nature of clang show in this small data set, not bad, on the other hand high counts for auto-rejuventation is misleading as a sign of improvement as many of the transformation or on base types with small type signatures.
+
+%  table here
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{| l | l | l | l | l |}
+            \hline
+            \textbf{Benchmark}    & \textbf{File Name}    & \textbf{\# of lines}  & \textbf{\# of trans,} & \textbf{\# of trans,} \\ 
+                                  &                       &                       & \textbf{auto-rejuv}   & \textbf{clang-tidy}   \\ \hline
+            Nanoflann    & nannoflann.cpp   & 2042  & 10  & 0\\ \hline
+            Swarmz       & swarmz.cpp.cpp   & 344   & 42  & 0\\ \hline
+            541.leela\_r & FastBoard.cpp    & 2452	& 217 & 0\\ \hline
+                         & GTP.cpp          & 502	& 22  & 0\\ \hline
+                         & UCTSearch.cpp    & 469   & 39  & 0\\ \hline
+                         & UCTNode.cpp	    & 457   & 28  & 0\\ \hline
+        \end{tabular}
+        \caption{Benchmark results for auto-rejuvenation and modernize-use-auto}
+        \label{tab:auto-tool-benchmark-res}
+    \end{center}
+\end{table}
+
+Further insights into the types being transformed by auto-rejuvenation can be seen when the minimum type length to be transformed was set to 6, Table \ref{tab:auto-tool-benchmark-type-limit}. A minimum length of 6 works well for filtering basic types as most basic type are 5 or less characters, which would not benefit from increased readability. The notable decreases in the number of transformations when compared to the previous tests in Table \ref{tab:auto-tool-benchmark-res} shows that being more selective is required if meaningful uses of auto are to be introduced automatically.
+
+% The number of basic types being transformed unnecessarily can be seen when contrasting the table above with Table \ref{tab:auto-tool-benchmark-type-limit}, where the auto-rejuvenation tool has been run with minimum type length to be transformed set to 6. A minimum length of 6 work well for filtering basic types as 
+
+% For further insight into the types being transformed by auto-rejuvenation, when a type length limit is imposed on the types to be transformed in the auto-rejuventation tool is drastically reduced the number transformed. 
+
+% though this does help better methods are need for accessing the usefullness of auto being applied
+
+% table with min name set
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{| l | l | l | l |}
+            \hline
+            \textbf{Benchmark}    & \textbf{File Name}    & \textbf{\# of lines}  & \textbf{\# of trans,} \\
+                                  &                       &                       & \textbf{auto-rejuv}   \\ \hline
+            Nanoflann    & nannoflann.cpp   & 2042  & 6  \\ \hline
+            Swarmz       & swarmz.cpp.cpp   & 344   & 29 \\ \hline
+            541.leela\_r & FastBoard.cpp    & 2452	& 13 \\ \hline
+                         & GTP.cpp          & 502	& 9  \\ \hline
+                         & UCTSearch.cpp    & 469   & 15 \\ \hline
+                         & UCTNode.cpp	    & 457   & 11 \\ \hline
+        \end{tabular}
+        \caption{Benchmark Test data of Project Auto }
+        \label{tab:auto-tool-benchmark-type-limit}
+    \end{center}
+\end{table}
+
+% need a middle ground
+It is clear that both approach do have there respective benefits, but a tool that is more complex selection than auto-rejuvenation, and is more open to transforming than modernize-use-auto is require to fully extract the benefits that \texttt{auto} could bring.
+
+% comparison against clang
+% -! operates significant different that the clang tidy tool, does not only focus on std iterators or uses with the new operator 
+% -! does not seem willing to handle variable declarations that don't use new but are longer than minimum length
+% - has a low hit rate going to be hard to find stuff that utlises it 
+% - testing, table of tests talk about why certain points match.
+
+% Results of use (data)
+
+\subsection{Possible Extensions}
+In the years following the introduction of \texttt{auto} in C++11 the standards to follow it continued extending the use cases for the keyword. Since the C++14 standard, \texttt{auto} has been able to infer the return types of functions as seen in Figure \ref{fig:funct-ret-inferred}. Extending the auto tool to infer return types of functions would be suitable for simple functions, but for handling all cases of transformation involving complex templated functions a separate tool would be more sensible.
+
+\begin{figure}[!h]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                Counter getCounterObj(){
+                    return lineCounter;
+                }
+        \end{minted}
+        \caption{Before: type declared, unsigned int}
+        \label{fig:funct-ret-inferred-before}
+        \vspace{0.40cm}
+    \end{subfigure}
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                auto getCounterObj(){
+                    return lineCounter;
+                }
+        \end{minted}
+        \caption{After: type inferred, signed int}
+        \label{fig:funct-ret-inferred-after}
+    \end{subfigure}
+    \caption{Inferring function return types}
+    \label{fig:funct-ret-inferred}
+\end{figure}
+
+%  more selective in the way it handles cases (e.g like clang) utilise type information, exentend to allow functions return types to be inferred added c++14 i think 
+
+\section{Summary}% what goes here ? 
+This chapter presented the auto-rejuvenation tool, explaining the purpose of type inference and how it can be utilise to rejuvenate the code. The underlying concepts and focus of the tool were discussed followed by details of the implementation. The tool was then assessed by running it against a set of selected file as benchmark as well as contrasting these results with a similar tool, modernize-use-auto, developed by Clang. 
+
+The auto-rejuvenation tool discussed in this chapter was a very locally focussed transformation. It only dealt with a single line of the source code, a variable declaration, to be transform in any instance. In the following chapter a more complex and spanning rejuvenation, for loop transformation, will be present. This transformation will require many spanning checks and transformations within the loop's body, as well as more complex methods of removal and insertions in to the source code. The for loop transform should reveal more of the power of automated rejuvenation in handling a complex transformation, as  the tedious and error prone work of checking the entire loop body by hand is removed.
+
+
+% This chapter has... explain what has been presented in this chapter 
+% Link to next chapter ... a more elaborate transformation is presented in the next chapter, spanning changes and checks
+% Ways it can be extended 
+
+\chapter{Loop Transform: For Loop to Ranged For Loop}\label{chp:loop-transform}
+
+% Abstract for chapter
+This Chapter aims to introduce the second rejuvenation of the project, which converts for loops to range-based for loops where appropriate. An Introduction 
+
+\section{Introduction}
+\subsection{Type of for loops}
+For loop statements are a concept familiar to most programmers and are implement in most programming languages inspired by C such as Java, C\#, go, perl. In C++, and most other languages, the for statement has three components init-expression, comparison expression and loop expression as seen in Figure \ref{fig:code-for-loop}, though each component is not required and can be a general expression. 
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+        for(init-expression; cond-expression; loop-expression)
+        \end{minted}
+        \caption{Components of C++ for loop}
+        \label{fig:code-for-loop-components}
+        \vspace{0.40cm}
+    \end{subfigure}
+    
+    \begin{subfigure}[h]{\textwidth}
+    \begin{minted}{C++}
+                    for(int i = 0; i < 10; i++)
+    \end{minted}
+    \caption{Example of C++ for loop}
+    \centering
+    \label{fig:code-for-loop-example}
+    \end{subfigure}
+    \caption{C++: for loop construct}
+    \label{fig:code-for-loop}
+\end{figure}
+
+A common use of for loops is to index in to arrays or other higher level container abstractions, such as List, Vectors or Sets and utilise each element in the loop body. This use case is so prevalent that C++ introduced the notation of an iterator interface \cite{ITER_CPP} to aide with the traversal of containers, Figure \ref{fig:code-iterator}, where indexing is a more costly operation, as the case with \texttt{std::Lists}. 
+
+\begin{figure}[H]
+    \begin{minted}{c++}
+        for(list<int>::iterator elem = num_l.begin();
+                elem != num_l.end(); elem++)
+    \end{minted}
+    \caption{Iterating through a List}
+    \centering
+    \label{fig:code-iterator}
+\end{figure}
+
+The prevalence of needing to iterate or index through a complete container or array also lead to the introduction of ranged-based for loops, Figure \ref{fig:code-ranged-based-for}, in the C++11 standard \cite{} . Many other languages had implement similar ranged-based for loop before C++, with Java including them since Java 5 \cite{JAVA_RANGE}, and languages like Python and Rust only implementing ranged-based for loops in there languages. Ranged-based for loops use a compact syntax with a variable taking the values of the container on the left hand with the container being iterated on the right, with the two separated by a colon. 
+
+\begin{figure}[H]
+    \begin{minted}{c++}
+                        for(int elem : num_l)
+    \end{minted}
+    \caption{Ranged-based for loop over a list}
+    \centering
+    \label{fig:code-ranged-based-for}
+\end{figure}
+
+\subsection{Key Differences}
+
+The key difference between between standard for loops and ranged-based is that the loop iterates through the whole container, it can not do partial iterations. Another difference is the ranged-based for loop are more restrictive as only one container can be traversed in the loop, where as a standard for loop could use its index in multiple arrays or containers, as well as other expressions. 
+
+While is maybe more restrictive, the syntax utilised for ranged-based for loops in Figure \ref{fig:code-ranged-based-for} is very compact and readable compared to standard for loop, Figure \ref{fig:code-for-loop-example}, and even more so than the very verbose syntax for using iterators, Figure \ref{fig:code-iterator}.
+
+% The clean and simple look of the make ranged-based for loops attractive to developers
+\subsection{Rejuvenating For Loops}
+The rejuvenation developed in this chapter, ranged-for-rejuvenation, aims to transform for loops of the type present in Figures \ref{fig:code-for-loop-example}, \ref{fig:code-iterator} to utilise ranged-based for loops. As the ranged-based for loops can only be used in specific situation where one container or array is being traversed completely, many uses of for loops would not be valid to transform. What conditions are required for a loop to be transformed are discussed in Section \ref{sec:for-concept}. 
+
+The goal of the transformation is to increase the readability and maintainability of the code, through utilising the simple and more compact range-based for loop to better express the underlying logic of the code. The readability is increased using ranged-for loops as the container which is the focus of the for loop is displayed in the loops header, meaning the programmer is not required to scan the loop to access if the loop is iterating through an array or container.
+
+% what are standard for loops, for (initialiser, comparison, iterator){}
+% what are ranged-based for loop
+% diff between loops
+% how is it a rejuvenation, added in C++11 standard previous way of doing it 
+% why is the rejuvenation worth it, what is the benefit ? 
+    % more concise notation
+    % readability
+    % Other languages utilise ranged for a lot e.g python does not even have standard loop
+%  examples required
+
+
+\section{Conceptual challenges and there solutions}\label{sec:for-concept}
+\subsection{Scope of transformation}
+As the number of ways to use a for loop construct is limitless, the transform imposes restrictions on the form the for loops can take. This is to help identify the for loop type that can be transformed and assess if it can be done safely. The transform, ranged-for-rejuvenation, focuses on three distinct ways of utilising for loops that is tries to transform shown in Figure \ref{fig:code-for-types}. 
+
+
+The iterating over a container for loop type as shown previously in Figure \ref{fig:code-iterator}, is the first type the tranformation attempts to detect.
+The conditions for Iterator loop type, Figure \ref{fig:code-for-iter}, being met is that \texttt{CONT} must be a container which utilises the \texttt{begin} and \texttt{end} functions, the type, \texttt{TYPE}, of the container is not checked. The \texttt{it\_name} must also be the same variable across the three components of the for loop, and the cond-expression must be a \texttt{!=} operator, but the position of the arguments does not matter. To be matched to this use case the \texttt{COND} can not be a reference and the functions calls must directly follow the container. 
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
+        \end{minted}
+        \caption{Loop Type: Iterator over container}
+        \label{fig:code-for-iter}
+        \vspace{0.40cm}
+    \end{subfigure}
+    
+    \begin{subfigure}[h]{\textwidth}
+    \begin{minted}{C++}
+    for(TYPE idx_NAME = 0; idx_NAME < CONT.size(); idx_NAME++)
+    \end{minted}
+    \caption{Loop Type: Array like container}
+    \centering
+    \label{fig:code-for-container}
+    \end{subfigure}
+
+    \begin{subfigure}[h]{\textwidth}
+    \begin{minted}{C++}
+    for(TYPE idx_NAME = 0; idx_NAME < (([0-9]+)|VAR); idx_NAME++)
+    \end{minted}
+    \caption{Loop Type: Statically allocated array}
+    \centering
+    \label{fig:code-for-stat}
+    \end{subfigure}
+    
+    \caption{Uses of for loops to transform}
+    \label{fig:code-for-types}
+\end{figure}
+
+
+The second loop form attempts to match the use case where a array like container is utilised, meaning a container that is not iterated over but indexed into using array access notation or direct member functions, \texttt{at}. The requirement to match the second for loop, Figure \ref{fig:code-for-container}, are that \texttt{idx\_name} is a variable being declared which is assigned 0, and appears the same throughout the three components. The comparison, cond-expression, requires comparing \texttt{idx\_name} to the container, \texttt{COND}, where \texttt{idx\_name} is required to be less than a method call to function \texttt{size}. Finally the loop-expression of the for loop should be \texttt{idx\_name} in a pre/post increment operation.
+
+The final case, statically allocated arrays, that the transform attempts to transform is the shown in figure \ref{fig:code-for-stat}. The init-expression of the for is the same as previously case, while the cond-expression differs. The comparison is between \texttt{idx\_name} and either a number which matches the size of the allocated array, Figure \ref{fig:code-static-for-cmp-num}, or a \texttt{const} variable which is assigned the same value as the size of the array, Figure \ref{fig:code-static-for-cmp-var}. The variable has to be \texttt{const} to ensure the size is not altered before it is used in the comparison. The comparison allows operator \texttt{!=}, $<$ and $>$ where \texttt{idx\_name} has to be less than size used. 
+
+    % 3 types of loops targeted 
+        % iterator for loops  
+        % container like for loops
+        % statically defined arrays 
+    % all distinct cases 
+
+\subsection{Loop information extracted}
+To preform necessary checks and traversals later in the transformation the container name and variable used in the needed to be extracted. For each for loop the transform would check if the loop matches any of the above cases and if so extracts the iterator, \texttt{it\_name}, or index,  \texttt{idx\_name}, from the init-expression. The container can be extracted from the cond-expression in the case of iterator for loop and the array like for loop, but this is not the case for the statically allocated array, only a value or variable representing the size is present. 
+
+The solution to locating the container utilised by the statically allocated type for loop was to traversal the loop body to find the array being indexed by the \texttt{idx\_name} variable. The search of the loop body would look for any array access notation and see if the index variable reference was the only expression present, \texttt{arr[idx\_name]}. If more than one array is being index the transform does not continue attempting to transform the loop, as ranged for only iterates over one container. If no container is found to be indexed the transform stops and the next for loop is checked.
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                int arr[N];
+                const int N = 10;
+                for(int i = 0; i < N; i++){...}
+        \end{minted}
+        \caption{Index loop: comparing against variable}
+        \label{fig:code-static-for-cmp-var}
+        \vspace{0.40cm}
+    \end{subfigure}
+
+    \begin{subfigure}[h]{\textwidth}
+    \begin{minted}{C++}
+                int arr[10];
+                for(int i = 0; i < 10; i++){...}
+    \end{minted}
+    \caption{Index loop: comparing against value}
+    \centering
+    \label{fig:code-static-for-cmp-num}
+    \end{subfigure}
+
+    \caption{Uses of for loops to transform}
+    \label{fig:code-static-for-cm}
+\end{figure}
+
+
+%     % deciding what type of loop we are dealing with
+%         % things that are consistent across the types
+%             % index/iterator is required to be the same across all 3 components of for
+
+% Explain difference in container detection for  
+
+\subsection{Safety of transformation}
+Assessing the safety of the transformation was the next significant challenge to handle, as certain uses of the index/iterator or container/array in the loop body could render the transformation to ranged-for invalid. The cases the transform aims to handle all have distinct ways the index/iterator or container/array are allowed to be used in loop body so are assess separately to assess safety.
+
+\subsubsection{Safety: Iterator loop body}
+The iterator for loop case differs from array like and statically allocated cases as the index is not a simple integer value, but a iterator that acts as a pointer to the object stored in the container. This means that in the body of the loop the iterator can only be deference directly or by using arrow expression, Figure \ref{fig:code-iter-uses}. If any other operation is preformed on the iterator then the transformation is considered invalid as altering the position of the iterator, \texttt{it\_name}, would not map to a full iteration through the container as is the case when using a ranged-for loop. 
+
+\begin{figure}[h]
+    \centering
+    \begin{minted}{C++}
+                                ...
+                        *it_name
+                        it_name->getField()
+                                ...
+    \end{minted}
+    \caption{Acceptable uses of Iterator in loop body}
+    \label{fig:code-iter-uses}
+\end{figure}
+
+As the container is not required to be in the loop body to be indexed into, as is the cases for the other for loop types, any use or function call on the container in the loop body invalids the transform. The transform is invalidated as function calls, e.g \texttt{vec.push\_back(item)}, on the container could alter the underlying size of the container which could cause dangerous undefined behaviour when iterating through the transformed ranged-for. This would not necessarily happen but as the ranged-for takes a copy of the length of the array at the initialisation of the loop, any changes to the size of the array would make this copied length of the container outdated and lead the iterator to accessing invalid or wrong data. 
+
+\subsubsection{Safety: Array like loop body}
+The array-like loop type requires additional checks in the loop body as the index has more restriction than the previous cases iterator. The index is restricted from being used outwith the array access notation, \texttt{vec[idx\_name]}, or in being used to index other containers/arrays. The index can also  be used in the containers member function \texttt{at}, such that \texttt{vec.at(idx\_name)}. The reason for restrictions are due the index being removed from source code and replaced with a variable that takes the current element of container being iterated through. So all uses of the index in expressions or outwith the loops container would become nonsensical after the transformation. The use of member functions of the container could, as mentioned before, alter the container where the iteration over the it by ranged-or after transformation could produce differing output that the intended effect. 
+
+\subsection{Safety: Statically allocated array }
+In the case of statically allocated arrays the check that the loop body is safe to transform is the same as listed for the Array like case but as basic array is being indexed and is not a container there is no additional checking for the \texttt{at()} method calls.  
+
+% two cases for this 
+    % iterator
+        % invalidation due to use of functions of the container in the loop body
+        % invalidation through the iterator being altered in some way instead of just being dereferenced * or -> arrow reference     
+    % array and array like
+        % array being index only by intended index, 
+        % index only being used in the for container like expression
+        % is safe to transform check for each loop needs to be explained
+        % array like containers can uses overloaded [] but also function call .at()
+
+
+\subsection{Components transformed}
+After the loop body was checked and the transform deemed safe to proceed, the next problem was identifying the form the ranged-for loop header should take, and the transformations required in the loop body to ensure that it is not invalidated by the new ranged-for loop header.
+
+The original loop header format of three components is first replaced by the ranged-for header, Figure \ref{fig:range-for-header-form}. The container/array identified as the object being iterated over is used as \texttt{range-expression}. While the \texttt{range-declaration} is a variable declaration with the same name as the \texttt{init-expression} of the original for loop, with the type changed to reflect the elements stored in the container/array. Reusing the name of \texttt{init-expression} simplifies the transformation of the old index/iterator when used in the loop body.
+ 
+As the new variable in the \texttt{range-declaration} needs to take on the type of the containers/arrays contents, the keyword \texttt{auto} is utilised to infer the type, Figure \ref{fig:range-for-header}. The main reason why auto is preferred than extracting the type from the container is explained in Section \ref{}. The use of reference, \&, operator in the type signature of \texttt{range-declaration} was to ensure that the objects of the underlying container/array are actually mutable through the variable. If the reference is not utilised the variable would only take a copy of the element in the container, so for complex data types this introduces a large overhead compared to simple reference. The reference also more closely relates to the previous semantics where the for loop body can change the underlying container.
+ 
+\begin{figure}[h]
+    \centering
+  
+  \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+            for( range-declaration : range-expression){...}
+        \end{minted}
+        \caption{Ranged-for standard form}
+        \label{fig:range-for-header-form}
+        \vspace{0.40cm}
+    \end{subfigure}
+
+    \begin{subfigure}[h]{\textwidth}
+    \begin{minted}{C++}
+                    for(auto & elem : CONT){...}
+    \end{minted}
+    \caption{Range-for format after transformation}
+    \centering
+    \label{fig:range-for-header}
+    \end{subfigure}
+
+    \caption{General form and transformation target form of Ranged-for}
+    \label{fig:code-for-headers}
+\end{figure}
+
+The loop body requires changes to all old uses of the \texttt{init-expression} variable as they are now direct references to array elements and not index variables or pointers. The for loop iterator case requires the dereferencing of the iterator to be removed,and for the arrow expression notation to be replaced with the dot expression notation, Figures \ref{fig:before-tran-iter}, \ref{fig:after-tran-iter}. The for the loop types using indexing require a similar transformation with array/container being index need to be replaced as along with the index, Figures \ref{fig:before-tran-idx}, \ref{fig:after-tran-idx}.
+
+\begin{figure}[H]
+    \centering
+  \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \begin{minted}{C++}
+        it_name->x_call();
+        (*it_name).y_call();
+        \end{minted}
+        \caption{Before: Using Iterator}
+        \label{fig:before-tran-iter}
+        \vspace{0.40cm}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\textwidth}
+        \begin{minted}{C++}
+        iter_name.x_call();
+        iter_name.y_call();
+        \end{minted}
+        \caption{After: Reference to element}
+        \centering
+        \label{fig:after-tran-iter}
+    \end{subfigure}
+    
+     \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \begin{minted}{C++}
+        COND[idx_name].w_call();
+        COND.at(idx_name) + 1;
+        \end{minted}
+        \caption{Before: Using index}
+        \label{fig:before-tran-idx}
+        \vspace{0.40cm}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\textwidth}
+        \begin{minted}{C++}
+        idx_name.w_call();
+        idx_name + 1;
+        \end{minted}
+        \caption{After: Reference to Element}
+        \centering
+        \label{fig:after-tran-idx}
+    \end{subfigure}
+
+    \caption{Transformation applicable to the for loop body}
+    \label{fig:code-trans-loop-body}
+\end{figure}
+
+% The for-loop-rejuvenation requires many small transformations to the source code to allow for the valid conversion to using ranged-for notation.  
+
+% use examples 
+% range for loop head 
+    % what is reused
+        % container is used from original loop for first 2 cases or one returned from loop body
+        % iterator name reused but type changed
+    % type is set to auto why why using & and why not const
+    
+%  loop body 
+    % every use of iterator 
+        % object no longer ptr to a position in container but ref remove defernces *(iter)  
+        %  also remove arrow notation p->get() to p.get()
+    %  for array like and statically allocated either cond[idx] or cond.at() notation and for array it is just arr[1]
+        %  fuck direct pointer arthmetic.
+
+\section{Implementation}
+
+The main entry point for the for-loop-rejuvenation is the traversal \texttt{ForLoopTraversal} which visits every for loop node in the source code file, checking if they match any of the three for loop types specified above.
+
+\subsection{Loop header checks}
+
+The main traversal first checks if the loop is of iterator type, Figure \ref{fig:code-for-iter}, by checking the initialise statement, comparison expression and increment expression. If the Initialisation check, \texttt{ hasValidInitializer}, finds a valid intialiser with a object making a call to \texttt{begin}, the function extracts the name of the object and variable being assign setting the container name and iterator name, respectfully. The names of the container and the iterator are then used in the further checks of comparison and the iterator expressions. The check of the comparison expression, \texttt{hasValidComparitor}, required taking into account that containers, e.g List, Vector, utilise overloaded operators, both overloaded and non-overload not equals operators had to be checked. The increment check also had to account for the overloading of the \texttt{++} operator on the iterator extracted from the initialise statement.
+
+\begin{figure}[h]
+    \centering
+  
+  \begin{subfigure}[h]{\textwidth}
+        \centering
+        % \includegraphics[]{}
+        \caption{Not-Equals Comparison}
+        \label{}
+        \vspace{0.40cm}
+    \end{subfigure}
+
+    \begin{subfigure}[h]{\textwidth}
+    % \includegraphics[]{}
+    \caption{Overloaded Not-Equals Comparison}
+    \centering
+    \label{}
+    \end{subfigure}
+
+    \caption{Not-equals Operators}
+    \label{Comparison Operators}
+\end{figure}
+% checks on loop headers 2 
+The array-like container case and the statically allocated array case can share the same checks for a valid intialiser as well as for increments expression check which is the same check, \texttt{hasVaildIncrement}, utilised by iterator for loop case as it handles overloaded and standard \texttt{++} operators. The difference 
+
+% Over arcing structure
+    %  main traversal
+        %  compiler generated check
+    %  checks on loop headers
+        % indexing cases needing checking on zero values and casting ?  
+    %  safe to transform traversals, different for iter and other 2 cases
+        % overloading operators problems difference between container and static array
+    %  generating new loop ranged-for header
+        % why use auto, extracting type is hard 
+    %  actual transformation pass over the loop body 
+        %  why it can't be a single pass, easier than a back tracking approach
+        %  how replacement works, search for each use of index unsure that its parent node is the array access expression with the array as the container 
+            
+%  extra: casting issues
+
+\section{Evaluation}
+
+\section{Summary}
+
+\chapter{Conclusion \& Further work}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \chapter{Initialised List}
+% \chapter{User defined Link List}
+% \chapter{Results}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \chapter{Conclusion}
+
+% use the following and \cite{} as above if you use BibTeX
+% otherwise generate bibtem entries
+\bibliographystyle{unsrt}
+\bibliography{mybibfile}
+
+\end{document}
