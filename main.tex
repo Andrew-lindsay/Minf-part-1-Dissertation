@@ -306,7 +306,7 @@ Type inference is a mechanism that enables the type of an expression to be deduc
 
 %  why it is good
 
-Starting with the C++11 standard, the language introduced type inference through the use of the \texttt{auto} keyword. This implementation of type inference it limited compared to other languages such as Haskell, as C++ \texttt{auto} can only be used for variable declarations \cite{HASK_TYPE_INF}. Unlike C++, Haskell's classical Hindley-Milner type inference allows for the complex type signatures of functions to be inferred from the body of the function. Figure \ref{fig:auto-type} is an example  showing  how some type signatures can be quite arduous, while not displaying any more useful information than stating the variable is an iterator.
+Starting with the C++11 standard, the language introduced type inference through the use of the \texttt{auto} keyword. This implementation of type inference it limited compared to other languages such as Haskell \cite{LYAHFGG_Lipovaca}, as C++ \texttt{auto} can only be used for variable declarations. Unlike C++, Haskell's classical Hindley-Milner type inference allows for the complex type signatures of functions to be inferred from the body of the function \cite{HASK_TYPE_INF}. Figure \ref{fig:auto-type} is an example  showing  how some type signatures can be quite arduous, while not displaying any more useful information than stating the variable is an iterator.
 
 \begin{figure}[!h]
     \centering
@@ -803,7 +803,7 @@ The conditions for Iterator loop type, Figure \ref{fig:code-for-iter}, being met
         \begin{minted}{C++}
 for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
         \end{minted}
-        \caption{Loop Type: Iterator over container}
+        \caption{Iterator Loop Type }
         \label{fig:code-for-iter}
         \vspace{0.40cm}
     \end{subfigure}
@@ -812,7 +812,7 @@ for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
     \begin{minted}{C++}
     for(TYPE idx_NAME = 0; idx_NAME < CONT.size(); idx_NAME++)
     \end{minted}
-    \caption{Loop Type: Array like container}
+    \caption{Array-like container Loop Type}
     \centering
     \label{fig:code-for-container}
     \end{subfigure}
@@ -821,7 +821,7 @@ for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
     \begin{minted}{C++}
     for(TYPE idx_NAME = 0; idx_NAME < (([0-9]+)|VAR); idx_NAME++)
     \end{minted}
-    \caption{Loop Type: Statically allocated array}
+    \caption{Statically allocated array Loop Type}
     \centering
     \label{fig:code-for-stat}
     \end{subfigure}
@@ -834,17 +834,6 @@ for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
 The second loop form attempts to match the use case where a array like container is utilised, meaning a container that is not iterated over but indexed into using array access notation or direct member functions, \texttt{at}. The requirement to match the second for loop, Figure \ref{fig:code-for-container}, are that \texttt{idx\_name} is a variable being declared which is assigned 0, and appears the same throughout the three components. The comparison, cond-expression, requires comparing \texttt{idx\_name} to the container, \texttt{COND}, where \texttt{idx\_name} is required to be less than a method call to function \texttt{size}. Finally the loop-expression of the for loop should be \texttt{idx\_name} in a pre/post increment operation.
 
 The final case, statically allocated arrays, that the transform attempts to transform is the shown in figure \ref{fig:code-for-stat}. The init-expression of the for is the same as previously case, while the cond-expression differs. The comparison is between \texttt{idx\_name} and either a number which matches the size of the allocated array, Figure \ref{fig:code-static-for-cmp-num}, or a \texttt{const} variable which is assigned the same value as the size of the array, Figure \ref{fig:code-static-for-cmp-var}. The variable has to be \texttt{const} to ensure the size is not altered before it is used in the comparison. The comparison allows operator \texttt{!=}, $<$ and $>$ where \texttt{idx\_name} has to be less than size used. 
-
-    % 3 types of loops targeted 
-        % iterator for loops  
-        % container like for loops
-        % statically defined arrays 
-    % all distinct cases 
-
-\subsection{Loop information extracted}
-To preform necessary checks and traversals later in the transformation the container name and variable used in the needed to be extracted. For each for loop the transform would check if the loop matches any of the above cases and if so extracts the iterator, \texttt{it\_name}, or index,  \texttt{idx\_name}, from the init-expression. The container can be extracted from the cond-expression in the case of iterator for loop and the array like for loop, but this is not the case for the statically allocated array, only a value or variable representing the size is present. 
-
-The solution to locating the container utilised by the statically allocated type for loop was to traversal the loop body to find the array being indexed by the \texttt{idx\_name} variable. The search of the loop body would look for any array access notation and see if the index variable reference was the only expression present, \texttt{arr[idx\_name]}. If more than one array is being index the transform does not continue attempting to transform the loop, as ranged for only iterates over one container. If no container is found to be indexed the transform stops and the next for loop is checked.
 
 \begin{figure}[h]
     \centering
@@ -875,16 +864,29 @@ The solution to locating the container utilised by the statically allocated type
 \end{figure}
 
 
+
+    % 3 types of loops targeted 
+        % iterator for loops  
+        % container like for loops
+        % statically defined arrays 
+    % all distinct cases 
+
+\subsection{Loop information extracted}
+To preform necessary checks and traversals later in the transformation the container name and variable used in the needed to be extracted. For each for loop the transform would check if the loop matches any of the above cases and if so extracts the iterator, \texttt{it\_name}, or index,  \texttt{idx\_name}, from the init-expression. The container can be extracted from the cond-expression in the case of iterator for loop and the array like for loop, but this is not the case for the statically allocated array, only a value or variable representing the size is present. 
+
+The solution to locating the container utilised by the statically allocated type for loop was to traversal the loop body to find the array being indexed by the \texttt{idx\_name} variable. The search of the loop body would look for any array access notation and see if the index variable reference was the only expression present, \texttt{arr[idx\_name]}. If more than one array is being index the transform does not continue attempting to transform the loop, as ranged for only iterates over one container. If no container is found to be indexed the transform stops and the next for loop is checked.
+
+
 %     % deciding what type of loop we are dealing with
 %         % things that are consistent across the types
 %             % index/iterator is required to be the same across all 3 components of for
 
 % Explain difference in container detection for  
 
-\subsection{Safety of transformation}
-Assessing the safety of the transformation was the next significant challenge to handle, as certain uses of the index/iterator or container/array in the loop body could render the transformation to ranged-for invalid. The cases the transform aims to handle all have distinct ways the index/iterator or container/array are allowed to be used in loop body so are assess separately to assess safety.
+\subsection{Safety of transformation}\label{sec:safety-of-trans}
+Assessing the safety of the transformation was the next significant challenge to handle, as certain uses of the iterator/index or container/array in the loop body could render the transformation to ranged-for invalid. The cases the transform aims to handle all have distinct ways the index/iterator or container/array are allowed to be used in loop body so are assess separately to assess safety.
 
-\subsubsection{Safety: Iterator loop body}
+\subsubsection{Safety: Iterator loop body}\label{sec:safe-iter}
 The iterator for loop case differs from array like and statically allocated cases as the index is not a simple integer value, but a iterator that acts as a pointer to the object stored in the container. This means that in the body of the loop the iterator can only be deference directly or by using arrow expression, Figure \ref{fig:code-iter-uses}. If any other operation is preformed on the iterator then the transformation is considered invalid as altering the position of the iterator, \texttt{it\_name}, would not map to a full iteration through the container as is the case when using a ranged-for loop. 
 
 \begin{figure}[h]
@@ -902,7 +904,7 @@ The iterator for loop case differs from array like and statically allocated case
 As the container is not required to be in the loop body to be indexed into, as is the cases for the other for loop types, any use or function call on the container in the loop body invalids the transform. The transform is invalidated as function calls, e.g \texttt{vec.push\_back(item)}, on the container could alter the underlying size of the container which could cause dangerous undefined behaviour when iterating through the transformed ranged-for. This would not necessarily happen but as the ranged-for takes a copy of the length of the array at the initialisation of the loop, any changes to the size of the array would make this copied length of the container outdated and lead the iterator to accessing invalid or wrong data. 
 
 \subsubsection{Safety: Array like loop body}
-The array-like loop type requires additional checks in the loop body as the index has more restriction than the previous cases iterator. The index is restricted from being used outwith the array access notation, \texttt{vec[idx\_name]}, or in being used to index other containers/arrays. The index can also  be used in the containers member function \texttt{at}, such that \texttt{vec.at(idx\_name)}. The reason for restrictions are due the index being removed from source code and replaced with a variable that takes the current element of container being iterated through. So all uses of the index in expressions or outwith the loops container would become nonsensical after the transformation. The use of member functions of the container could, as mentioned before, alter the container where the iteration over the it by ranged-or after transformation could produce differing output that the intended effect. 
+The array-like loop type requires additional checks in the loop body as the index has more restriction than the previous cases iterator. The index is restricted from being used outwith the array access notation, \texttt{vec[idx\_name]}, or in being used to index other containers/arrays. The index can also  be used in the containers member function \texttt{at}, such that \texttt{vec.at(idx\_name)}. The reason for restrictions are due the index being removed from source code and replaced with a variable that takes the current element of container being iterated through. So all uses of the index in expressions or outwith the loops container would become nonsensical after the transformation. The use of member functions of the container could, as mentioned before, alter the container where the iteration over the it by ranged-or after transformation could produce differing output than the intended effect. 
 
 \subsection{Safety: Statically allocated array }
 In the case of statically allocated arrays the check that the loop body is safe to transform is the same as listed for the Array like case but as basic array is being indexed and is not a container there is no additional checking for the \texttt{at()} method calls.  
@@ -1019,7 +1021,7 @@ The loop body requires changes to all old uses of the \texttt{init-expression} v
 
 \section{Implementation}
 
-The main entry point for the for-loop-rejuvenation is the traversal \texttt{ForLoopTraversal} which visits every for loop node in the source code file, checking if they match any of the three for loop types specified above.
+The main entry point for the for-loop-rejuvenation is the traversal \texttt{ForLoopTraversal} which visits every for loop node, SgForStatement, in the source code file, checking if they match any of the three for loop types specified above.
 
 \subsection{Loop header checks}
 
@@ -1047,21 +1049,122 @@ The main traversal first checks if the loop is of iterator type, Figure \ref{fig
     \label{fig:comp-operators}
 \end{figure}
 % checks on loop headers 2 
-The array-like container case and the statically allocated array case can share the same checks for a valid intialiser, \texttt{hasValidIndexInitialiser(..)}, and increment expression, \texttt{hasVaildIncrement}. The valid increment check can be the same check utilised by iterator for loop case as well as it handles overloaded and standard \texttt{++} operators. The shared check, \texttt{hasValidIndexInitialiser}, which ensures that the initial value of the indexing variable is 0 does not restrict to only allow standard integer zeros, it supports long integers, \texttt{0l, 0L}. The check also handles any implicit or explicit casting that can occur from the type utilised by the variable. The check rejects assigning the indexing variable any variation of a double value to simplify the process of extracting the value used to initialise it and compare it to zero.
+The array-like container case and the statically allocated array case can share the same checks for a valid intialiser, \texttt{hasValidIndexInitialiser(..)}, and increment expression, \texttt{hasVaildIncrement}. The valid increment check can be the same check utilised by iterator for loop case as well as it handles overloaded and standard \texttt{++} operators. The shared check, \texttt{hasValidIndexInitialiser}, which ensures that the initial value of the indexing variable is 0 ,Figure \ref{fig:code-for-container},  does not restrict matching to standard integer zeros, it supports long integers, \texttt{0l, 0L}. The check also handles any implicit or explicit casting that can occur from the type utilised by the variable. The check returns false if the indexing variable is assign any variation of a double value. This restriction is instated to  simplify the process of extracting the value and comparing it to zero.
 
 The differences between the array like container and the statically allocated array centre around the comparison check. For the array like container the check \texttt{hasVaild SizeComparitor(..)} , checks the index is compared against the container calling end, \texttt{COND.end()}. The decision was made to only support direct uses of the container, references  to them are rejected, so only the dot notation for method calls is checked. Unlike the iterator case the container is not present initialise the first time it is seen in the array like case is in the comparitor so it is here that the container is extracted to be utilises later in identifying the container in the loop body.
 
-The statically allocated array case required a unique approach to the comparitor check, \texttt{hasVaildBasicComparitor(..)}, as the index it compared to the size of the array before we have a reference to the container which is the focus of the for loop. To be able to check that the index is bounded by the size of the array, the array has to be known. So the hasVaildBasicComparitor function utilises the traversal ValidArrayIndexTraversal to scan the loop body of the for loop
+\subsubsection{Locating the Array being indexed}
+
+The statically allocated array case required a unique approach to the comparitor check, \texttt{hasVaildBasicComparitor(..)}, as the index it compared to the size of the array before we have a reference to the container which is the focus of the for loop, Figure \ref{fig:code-for-stat}. To be able to check that the index is bounded by the size of the array, the array has to be known. So the hasVaildBasicComparitor function utilises a new traversal class ValidArrayIndexTraversal to scan the loops body to locate the container that is being indexed. The traversal does not aim to assess the safety of the transformation on the loop body, this would over complicate the traversal and reduced re-usability, as the same loop safety check traversal, \texttt{safeIndexForTransform(..)}, is reused by the statically allocated array and the array-like cases. 
+
+\begin{figure}[H]
+    \begin{subfigure}[b]{0.6\textwidth}
+        \centering
+        \includegraphics[width=1\textwidth]{images/ArrPtrAcc.png}
+        \caption{AST of the function}
+        \label{fig:arr-acc-AST}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \begin{minted}{C++}
+            ...
+        arr[idx_name]
+            ...
+        \end{minted}
+        \caption{Code the AST is representing}
+        \label{fig:arr-acc-code}
+    \end{subfigure}
+    \vspace{-0.5cm}
+    \caption{Array access notation}
+    \label{fig:arr-access}
+\end{figure}
+
+The \texttt{ValidArrayIndexTraversal} traversal searches for all pointer array reference expressions nodes, Figure \ref{fig:arr-access}, in the loop body then checks that the right hand side node is a variable reference to the index varialbe, \texttt{idx\_name}. If the index does match the variable declared in init-expression of the for loop, and the left hand side of the array access is a variable reference, the array the variable refers to it set as the focus of the for loop. Upon finding a suitable array, and before continuing the traversal, the size of the statically defined array is extracted and stored in a field in the traversal object along with the arrays name. 
+
+\begin{figure}[H]
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \includegraphics[height=5.6cm]{images/init-list.png}
+        \caption{List initialisation AST}
+        \label{fig:list-init-AST}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.5\textwidth}
+        \centering
+        \begin{minted}{C++}
+    int arr[] = {1,2,3,4,5};
+        \end{minted}
+        \caption{List initialisation code}
+        \label{fig:list-init-code}
+    \end{subfigure}
+    \vspace{-0.5cm}
+    \caption{List initialisation of an Array}
+    \label{fig:list-init}
+\end{figure}
+
+The size of the array is found by examining the declaration of the array, a pointer to it is stored in the SgVarRefExp node. The declaration can take the forms shown in Figure \ref{fig:code-static-for-cm} as well as a list initialisation. So  can be extracted from the non-list initialisation declaration by accessing the type of the variable declaration, SgArrayType, then getting size value with the function, \texttt{arraytype->get\_index()}. To uncover the size of the list initialise array, the number of child nodes of the \texttt{SgExprListExp} needed to be retrieved, Figure \ref{fig:list-init}. 
+
+After the container name and size have been extracted, the traversal continues searching all SgPtrArrRefExp, node and if another array with a different name meets the matching criteria the traversal set its \texttt{valid} field to false. So the \textit{hasVaildBasicComparitor} can check this field and return false once the traversal of the body end, stopping the transformation of that for loop. If only a single array is found the validation of the comparison expression proceeds similarly to the array-like container check, ensuring that the value used in the comparison matches the actual array size from the traversal.  
+
+\subsection{Safe to transform checks}
+
+After the loop has matched to a supported loop type with the loop components being validated, the loop body need to be confirm saft to tranform prefore proceeding. It was decided that to simplify the code and the transform's design, two seperate traversals of the loop body would be utilised, one traversal for iterator loop type, \texttt{IteratorUseTraversal}, and another for array-like and statically allocated loop types, \texttt{IndexUseTraversal}. 
+
+The \texttt{IteratorUseTraversal} searches for every SgVarRefExp nodes seeing if the variable name matches either the name of the iterator variable or the container, handling them seperatly. As the transform is interested in where the variables are being used, the parent node of the SgVarRefExp node is extracted, \texttt{varRef->get\_parent()}. The only acceptable parents nodes for the iterator variable are SgPointerDerefExp for non-overloaded dereference, SgArrowExp for non-overloaded access to method using arrow expression and finally SgDotExp nodes, which represent function calls on the iterator as it is an object. As the SgDotExp node has the iterator name on the left hand side of the operation the only allowed methods to be called are \textit{operator*} and \textit{operator$\rightarrow$}    representing the overloaded versions of the prevoiusly mentions expression. The reasons for only accepting these nodes and overloaded operator were discussed in Section \ref{sec:safety-of-trans}. The if a container variable is found in the loop body then independant of the parent the loop body is marked as unsafe to transform.
+
+The \texttt{IndexUseTraversal} traversal similarly checks every SgVarRefExp node and extracts the parent node if the variable name matches the container or index in this case. As this traversal handles both array-like and statically allocated arrays it needs to handle the overloaded operator, \textit{operator[]} and the \texttt{at(..)} method call as well as normal array access notation represented by the SgPntrArrRefExp node in the AST. The index's allowed parent nodes are SgExprListExp which represents the arguments to a function call and the previously mentioned SgPntrArrRefExp node for non overload access. To check that the function call is only the allowed operators the parent of the argument list needs to be check as it is the root of the function call SgFunctionCallExp.
+
+\subsection{Replacing for statement with Ranged-for}
+After the loop body has been confirmed to be safe the transformation of the for loop can begin. To start with the transform creates a new ranged-for statement to replace the existing for statement . The function \textit{constructRangedBasedForLoop(..)} was created to build the ranged-for node, SgRangeBasedForStatement, requiring only the names of the container/array and the iterator/index. The function utilises the SageBuilder interface for constructing statements, the interface is used to build the variable declaration that will be the range-declaration, Figure \ref{fig:range-for-header-form}. The Figure \ref{fig:range-dec-var} shows the construction of the variable, the type is set to utilise \texttt{auto} type inference as the extraction of type information for containers such as \texttt{vector<int>} is overly cumbersome as the template instantiated code in the AST does not make it simple. 
+
+The final step in creating the range-based for are shown in Figure \ref{fig:range-based-for-stmt}. Many of the arguments for the build function can be omitted as we are not required to compile the code from the AST as our target is source code. The only required statement are the range\_variable previously build and a declaration matching that of the container/array utilised called range\_var. The loop body is left empty as it will be replace by the transformed loop body of thr original for loop.
+
+\begin{figure}[H]
+    \centering
+    \begin{minted}{C++}
+	SgVariableDeclaration* range_variable =
+		buildVariableDeclaration(iterName, 
+		    buildReferenceType(
+		        buildTemplateType("auto"))); 
+    \end{minted}
+    \caption{Building range-declaration variable}
+    \label{fig:range-dec-var}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{minted}{C++}
+SgRangeBasedForStatement* rangeFor =
+    buildRangeBasedForStatement_nfi(range_variable,
+                                    range_var,
+                                    NULL, NULL, NULL, NULL,
+                                    buildBasicBlock());	
+    \end{minted}
+    \caption{Building Ranged-based For}
+    \label{fig:range-based-for-stmt}
+\end{figure}
+
+\subsection{Transformation of loop body}
+
+The transformation of the loop body is achieved by yet another traversal through the loop body two separate traversals exist for, \texttt{IteratorUseTransform} for the iterator case, and \texttt{IndexUseTransform} for array-like and statically allocated cases. The decision to create a separate traversal for the checking the safety of the loop body and transforming it was to simplify the traversal and not prescribe to much functionality to a single traversal. If a single traversal was utilised it would require implementing a form of backtracking to undo changes when traversing the loop body or to copy the loop body AST which depending on the size greatly impact performance and memory use.
+
 
 % Over arcing structure
     %  main traversal
         %  compiler generated check
+        
     %  checks on loop headers
-        % indexing cases needing checking on zero values and casting ?  
+        % indexing cases needing checking on zero values and casting ? 
+        
     %  safe to transform traversals, different for iter and other 2 cases
         % overloading operators problems difference between container and static array
-    %  generating new loop ranged-for header
-        % why use auto, extracting type is hard 
+        % same traversal for statically allocated and array-like container 
+        % differ
+            
+    %  generating new loop ranged-for header 
+        % why use auto, extracting type is hard
+        
     %  actual transformation pass over the loop body 
         %  why it can't be a single pass, easier than a back tracking approach
         %  how replacement works, search for each use of index unsure that its parent node is the array access expression with the array as the container 
@@ -1070,7 +1173,9 @@ The statically allocated array case required a unique approach to the comparitor
 
 \section{Evaluation}
 
+
 \section{Summary}
+
 
 \chapter{Conclusion \& Further work}
 
