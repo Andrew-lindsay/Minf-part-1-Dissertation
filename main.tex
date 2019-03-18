@@ -789,7 +789,7 @@ The goal of the transformation is to increase the readability and maintainabilit
 
 
 \section{Conceptual challenges and there solutions}\label{sec:for-concept}
-\subsection{Scope of transformation}
+\subsection{Scope of transformation}\label{sec:forLoop-scope-trans}
 As the number of ways to use a for loop construct is limitless, the transform imposes restrictions on the form the for loops can take. This is to help identify the for loop type that can be transformed and assess if it can be done safely. The transform, ranged-for-rejuvenation, focuses on three distinct ways of utilising for loops that is tries to transform shown in Figure \ref{fig:code-for-types}. 
 
 
@@ -1229,29 +1229,54 @@ replaceStatement(loopNode, rangeFor);
 %  extra: casting issues
 
 \section{Evaluation}
+The for-loop-rejuvenation defined in the previous sections will be evaluated, in a similar manor to the auto-rejuvenation with a comparison to an existing clang-tidy tool. The evaluation will compare what the transforms target, how they assess safety of transformation and there response to running on real world programmes.   
 
-\subsection{Testing of tool and comparison to clang-tidy}
-As previous mentioned in Section \ref{sec:cmp-auto-reju-mod-auto} and related work Section \ref{sec:rw-clang-tidy}, 
+\subsection{Testing of rejuvenation and comparison to clang-tidy}
+As previous mentioned in Section \ref{sec:cmp-auto-reju-mod-auto} and related work Section \ref{sec:rw-clang-tidy}, clang-tidy features a set of modernize checks. The most relevant for comparing to the for-loop-rejuvenation is the the modernize-convert-loop \cite{FOR_CONVERT}, previously mention in Section \ref{sec:rw-clang-tidy}. As the for loop types targeted by for-loop-rejuvenation, Section \ref{sec:forLoop-scope-trans}, were based on those defined by, the modernize-loop-convert check the comparison between the tools is made easier. Both transformations handle loops over statically allocated arrays, containers, using iterators and array-like containers, using at or []. The transforms differ though in how they assess the safety of a transformation and how open or restrictive they are in allowing loops into each category. 
+
+The modernize-loop-convert implements a set of confidence level, risky, reasonable and safe, which dictate if the loop body is safe enough to allow for transformation of the loop. The risky confidence setting allows for loops to be transformed where methods of the container are called in the loop body while as well all all, reasonable confidence allows the conversion of those container which make calls to new \texttt{end()} or \texttt{size()}, similarly to the case shown in Figure \ref{fig:code-for-container}. Finally, the safe confidence level allows only the for loops that do not have criteria that would place them in the other two levels.
+
+The testing of both tranformation was conducted on a 
+
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{| l | l | l | l |}
+            \hline
+            \textbf{Benchmark}    & \textbf{File Name}    & \textbf{\# of lines}  & \textbf{\# of trans,} \\
+                                  &                       &                       & \textbf{auto-rejuv}   \\ \hline
+            Nanoflann    & nannoflann.cpp   & 2042  & 6  \\ \hline
+            Swarmz       & swarmz.cpp.cpp   & 344   & 29 \\ \hline
+            541.leela\_r & FastBoard.cpp    & 2452	& 13 \\ \hline
+                         & GTP.cpp          & 502	& 9  \\ \hline
+                         & UCTSearch.cpp    & 469   & 15 \\ \hline
+                         & UCTNode.cpp	    & 457   & 11 \\ \hline
+        \end{tabular}
+        \caption{Benchmark Test data of Project Auto }
+        \label{tab:auto-tool-benchmark-type-limit}
+    \end{center}
+\end{table}
 
 
 % Comparison to clang-tidy modernise-for-loop + Testing
     % explain what modernise-loop-convert does 
-        % risky settings
         % target transformation similar to the designed tool risky setting adjusted
+        % risky settings
         % handles types in for loop more sensible - not always using auto
     % showing table of data from benchmarks
         % number of hits on benchmarks
         % oracle to see how good performance is
         % what can be drawn from this comparison 
-        % 
-        
+
+
 % Problems in development - can be removed 
 
 % Limitations of the transformation
+    % cases where it can be used are limitied 
+    % can't catch most use cases of passing a variable to the statically allocated 
+    %   array as variable is passed through a function.
 
 % possible extensions - some what interesting
     % smarter types extraction for loop instead of always utilising auto
-    % 
 
 \section{Summary}
 
