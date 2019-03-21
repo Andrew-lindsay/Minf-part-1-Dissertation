@@ -703,7 +703,7 @@ In the years following the introduction of \texttt{auto} in C++11 the standards 
 \section{Summary}% what goes here ? 
 This chapter presented the auto-rejuvenation tool, explaining the purpose of type inference and how it can be utilise to rejuvenate the code. The underlying concepts and focus of the tool were discussed followed by details of the implementation. The tool was then assessed by running it against a set of selected file as benchmark as well as contrasting these results with a similar tool, modernize-use-auto, developed by Clang. 
 
-The auto-rejuvenation tool discussed in this chapter was a very locally focussed transformation. It only dealt with a single line of the source code, a variable declaration, to be transform in any instance. In the following chapter a more complex and spanning rejuvenation, for loop transformation, will be present. This transformation will require many spanning checks and transformations within the loop's body, as well as more complex methods of removal and insertions in to the source code. The for loop transform should reveal more of the power of automated rejuvenation in handling a complex transformation, as  the tedious and error prone work of checking the entire loop body by hand is removed.
+The auto-rejuvenation tool discussed in this chapter was a locally focussed transformation. It only dealt with a single line of the source code, a variable declaration, to be transform in any instance. In the following chapter a more complex and spanning rejuvenation, for loop transformation, will be present. This transformation will require many spanning checks and transformations within the loop's body, as well as more complex methods of removal and insertions in to the source code. The for loop transform should reveal more of the power of automated rejuvenation in handling a complex transformation, as  the tedious and error prone work of checking the entire loop body by hand is removed.
 
 
 % This chapter has... explain what has been presented in this chapter 
@@ -793,7 +793,6 @@ The goal of the transformation is to increase the readability and maintainabilit
 \subsection{Scope of transformation}\label{sec:forLoop-scope-trans}
 As the number of ways to use a for loop construct is limitless, the transform imposes restrictions on the form the for loops can take. This is to help identify the for loop type that can be transformed and assess if it can be done safely. The transform, ranged-for-rejuvenation, focuses on three distinct ways of utilising for loops that is tries to transform shown in Figure \ref{fig:code-for-types}. 
 
-
 The iterating over a container for loop type as shown previously in Figure \ref{fig:code-iterator}, is the first type the tranformation attempts to detect.
 The conditions for Iterator loop type, Figure \ref{fig:code-for-iter}, being met is that \texttt{CONT} must be a container which utilises the \texttt{begin} and \texttt{end} functions, the type, \texttt{TYPE}, of the container is not checked. The \texttt{it\_name} must also be the same variable across the three components of the for loop, and the cond-expression must be a \texttt{!=} operator, but the position of the arguments does not matter. To be matched to this use case the \texttt{COND} cannot be a reference and the functions calls must directly follow the container. 
 
@@ -863,8 +862,6 @@ The final case, statically allocated arrays, that the transform attempts to tran
     \caption{Uses of for loops to transform}
     \label{fig:code-static-for-cm}
 \end{figure}
-
-
 
     % 3 types of loops targeted 
         % iterator for loops  
@@ -1244,57 +1241,47 @@ A reason for the reduced transformation rate in the for-loop-rejuevenation can b
 \begin{figure}[!ht]
     \centering
     \begin{minted}{C++}
-        BITBOARD DiagMaska1h8[64],DiagMaska8h1[64];
-        for (i = 0; i < 64; i++){
-            DiagMaska1h8[i] = 0;
-            DiagMaska8h1[i] = 0;
-                    ...
-        }
+            BITBOARD DiagMaska1h8[64],DiagMaska8h1[64];
+            for (i = 0; i < 64; i++){
+                DiagMaska1h8[i] = 0;
+                DiagMaska8h1[i] = 0;
+                        ...
+            }
     \end{minted}
     \caption{Example of a transform that is impossible}
     \label{fig:code-untrans-example}
 \end{figure}
 
-The previous example showed the impracticality of the transformation in some cases but this is not the only reason some for loops are ignored. In the file  \texttt{TraverseSchema.cpp} from \textit{xalancbmk} benchmark suffers from a similar situation of having many for loop and non being selected for transformaion. Figure \ref{fig:no-rejuv-indirect-var} shows one of \texttt{TraverseSChema.cpp}'s for loop header, the could actually be transform as the loop body (not displayed) has not conflicts and the loop is bounded by a call to the \texttt{size} method \texttt{fIC\_Elements}. However, currently in for-loop-rejuvenation this is rejected as the transform would not identify the loop header as array-like but statically array then error on not finding a integer value after analysing \texttt{icListSize}. This loop form could be handled if references to containers were excepted along with array-like loops also allowing variable in the comparison expression for size. The problem remains, how far should the transformation follow the expression to determine if a loop is met   
+The previous example showed the impracticality of the transformation in some cases but this is not the only reason some for loops are ignored. The file  \texttt{TraverseSchema.cpp} from \textit{xalancbmk} benchmark suffers from a similar situation of having many for loop and non being selected for transformaion. Figure \ref{fig:no-rejuv-indirect-var} shows one of \texttt{TraverseSChema.cpp}'s for loop header, that could actually be transform as the loop body has no conflicts and the loop is bounded by a call to the \texttt{size} method \texttt{fIC\_Elements}. However, currently in for-loop-rejuvenation this is rejected as the transform would not identify the loop header as array-like but statically array then error on not finding a integer value after analysing \texttt{icListSize}. This loop form could be handled if references to containers were excepted along with array-like loops also allowing variable in the comparison expression for size. The problem remains, how far should the transformation follow the expression to determine if a loop is transformable. In this case the call to \textit{size} is only contained in a local variable \texttt{icListSize = fIC\_Elements->size()} but if the variable utilised was an argument that had been passed to the function the difficulty increases dramatically. 
 
 \begin{figure}[H]
     \centering
     \begin{minted}{C++}
-        unsigned int icListSize = fIC_Elements->size();
-        for (unsigned int i=0; i < icListSize; i++){ 
-                        ... 
-        }
+            unsigned int icListSize = fIC_Elements->size();
+            for (unsigned int i=0; i < icListSize; i++){ 
+                            ... 
+            }
     \end{minted}
     \caption{Example of possible transformation missed}
     \label{fig:no-rejuv-indirect-var}
 \end{figure}
 
+% round off
+The examples of for-loops displayed above show that there are common patterns to their use and that those pattern, that can be transformed, could be added to the transformation, but capturing all possible patterns would be unfeasible and lead to a explosion in complexity. The current effectiveness of for-loop-rejuvenation tool is lacking seen from Table \ref{tab:for-tool-benchmark} and the examples above. To increase the effectiveness in a meaningful way an analysis of the most utilised pattern of for-loop use could find the uses like those in Figure \ref{fig:no-rejuv-indirect-var} and integrate them in to the rejuvenation to build a more effective tool.
+
 \section{Summary}
-This chapter introduced the for-loop-rejuvenation and explored the transforms set of rules for detecting for loops and checking the 
+This chapter introduced the for-loop-rejuvenation and explored the transforms set of rules for detecting for loops and checking there safety. The transform aims to increase the readability and maintainability of for-loops by utilises the ranged-for loop construct introduced in C++11. Through testing and comparison to similar tools it can be seen that the rejuvenation is limited it is effect as the number of possible loops to transforms is subset of total loops. The rejuevenation also suffers from an overly restrictive approach in selecting those remaining for loops for transformation.
 
-% zero hit rate on most tests 
-    
-% write about data, what is shows
+The for-loop-rejuvenation does show how a rejuvenation can handle spanning transformations, as the entire loop body needs to be traversed to ensure the for loop is valid for use with a range-for construct. The for-loop-rejuvenation however only traverses or makes changes with the scope of the for loop, more elaborate rejuvenations such as identifying and transforming user defined linked lists to\textit{ std::list}, which would require checks spanning entire files and identifying multiple functions and uses. This complex spanning rejuvenation shows that rejuvenations can target large scale structures which could greatly increase the maintainability of old code by offering a standard interface, std::list, after the tranformation.
 
-% try running the tests on multiple spec benchmarks and assessing the effectiveness discuss where it is lacking 
+% does have its benefits, readability
 
-% oracle style try on selected files - not hard ? 
+% results transform limited in its effect, ranged-for loops are only useful or usable in a very limited setting
 
-% give example of situation not caught code - bitboard
-    
-% clang get one better
+% the span of the transformation restricted to the body of the for loop, other rejuvenation can go further than that 
 
-% TEST 1 - TraverseSchema.cpp
-    % unsigned int icListSize = fIC_Elements->size();
-    %         for (unsigned int i=0; i < icListSize; i++) {
+% more elaborate experiments detecting user defined linked lists 
 
-% TEST 2 - bitboard.cpp
-    % BITBOARD DiagMaska1h8[64], 
-    %      DiagMaska8h1[64];
-    % for (i = 0; i < 64; i++) {
-    %     DiagMaska1h8[i] = 0;
-    %     DiagMaska8h1[i] = 0;
-% TEST 3
 
 \begin{landscape}
 \begin{table}[H]
