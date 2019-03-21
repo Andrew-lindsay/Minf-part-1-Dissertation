@@ -7,6 +7,7 @@
 \usepackage{hyperref}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{lscape}
 
 \begin{document}
 % title{\vspace{-5.0cm} \centering{\includegraphics[scale=1]{path/to/image/file.png}} \\ Automated Source Code Rejuvenation}
@@ -20,7 +21,7 @@
 \date{\today}
 
 \abstract{
-
+    
 }
 
 \maketitle
@@ -716,7 +717,7 @@ This Chapter aims to introduce the second rejuvenation of the project, which con
 
 \section{Introduction}
 \subsection{Type of for loops}
-For loop statements are a concept familiar to most programmers and are implement in most programming languages inspired by C such as Java, C\#, go, perl. In C++, and most other languages, the for statement has three components init-expression, comparison expression and loop expression as seen in Figure \ref{fig:code-for-loop}, though each component is not required and can be a general expression. 
+For loop statements are a concept familiar to most programmers and are implemented in most programming languages inspired by C such as Java, C\#, go, perl. In C++, and most other languages, the for statement has three components init-expression, comparison expression and loop expression as seen in Figure \ref{fig:code-for-loop}, though each component is not required and can be a general expression. 
 
 \begin{figure}[H]
     \centering
@@ -742,7 +743,7 @@ For loop statements are a concept familiar to most programmers and are implement
     \label{fig:code-for-loop}
 \end{figure}
 
-A common use of for loops is to index in to arrays or other higher level container abstractions, such as List, Vectors or Sets and utilise each element in the loop body. This use case is so prevalent that C++ introduced the notation of an iterator interface \cite{ITER_CPP} to aide with the traversal of containers, Figure \ref{fig:code-iterator}, where indexing is a more costly operation, as the case with \texttt{std::Lists}. 
+A common use of for loops is to index into arrays or other higher level container abstractions, such as List, Vectors or Sets and utilise each element in the loop body. This use case is so prevalent that C++ introduced the notation of an iterator interface \cite{ITER_CPP} to aide with the traversal of containers, Figure \ref{fig:code-iterator}, where indexing is a more costly operation, as the case with \texttt{std::Lists}. 
 
 \begin{figure}[H]
     \begin{minted}{c++}
@@ -754,7 +755,7 @@ A common use of for loops is to index in to arrays or other higher level contain
     \label{fig:code-iterator}
 \end{figure}
 
-The prevalence of needing to iterate or index through a complete container or array also lead to the introduction of ranged-based for loops, Figure \ref{fig:code-ranged-based-for}, in the C++11 standard \cite{} . Many other languages had implement similar ranged-based for loop before C++, with Java including them since Java 5 \cite{JAVA_RANGE}, and languages like Python and Rust only implementing ranged-based for loops in there languages. Ranged-based for loops use a compact syntax with a variable taking the values of the container on the left hand with the container being iterated on the right, with the two separated by a colon. 
+The prevalence of needing to iterate or index through a complete container or array also lead to the introduction of ranged-based for loops, Figure \ref{fig:code-ranged-based-for}, in the C++11 standard \cite{} . Many other languages had implement similar ranged-based for loop before C++, with Java including them since Java 5 \cite{JAVA_RANGE}, and languages like Python and Rust only implementing ranged-based for loops in their languages. Ranged-based for loops use a compact syntax with a variable taking the values of the container on the left hand with the container being iterated on the right, with the two separated by a colon. 
 
 \begin{figure}[H]
     \begin{minted}{c++}
@@ -767,13 +768,13 @@ The prevalence of needing to iterate or index through a complete container or ar
 
 \subsection{Key Differences}
 
-The key difference between between standard for loops and ranged-based is that the loop iterates through the whole container, it can not do partial iterations. Another difference is the ranged-based for loop are more restrictive as only one container can be traversed in the loop, where as a standard for loop could use its index in multiple arrays or containers, as well as other expressions. 
+The key difference between standard for loops and ranged-based is that the loop iterates through the whole container, it can not do partial iterations. Another difference is the ranged-based for loop are more restrictive as only one container can be traversed in the loop, whereas a standard for loop could use its index in multiple arrays or containers, as well as other expressions. 
 
 While is maybe more restrictive, the syntax utilised for ranged-based for loops in Figure \ref{fig:code-ranged-based-for} is very compact and readable compared to standard for loop, Figure \ref{fig:code-for-loop-example}, and even more so than the very verbose syntax for using iterators, Figure \ref{fig:code-iterator}.
 
 % The clean and simple look of the make ranged-based for loops attractive to developers
 \subsection{Rejuvenating For Loops}
-The rejuvenation developed in this chapter, ranged-for-rejuvenation, aims to transform for loops of the type present in Figures \ref{fig:code-for-loop-example}, \ref{fig:code-iterator} to utilise ranged-based for loops. As the ranged-based for loops can only be used in specific situation where one container or array is being traversed completely, many uses of for loops would not be valid to transform. What conditions are required for a loop to be transformed are discussed in Section \ref{sec:for-concept}. 
+The rejuvenation developed in this chapter, ranged-for-rejuvenation, aims to transform for loops of the type present in Figures \ref{fig:code-for-loop-example}, \ref{fig:code-iterator} to utilise ranged-based for loops. As the ranged-based for loops can only be used in a specific situation where one container or array is being traversed completely, many uses of for loops would not be valid to transform. What conditions are required for a loop to be transformed are discussed in Section \ref{sec:for-concept}. 
 
 The goal of the transformation is to increase the readability and maintainability of the code, through utilising the simple and more compact range-based for loop to better express the underlying logic of the code. The readability is increased using ranged-for loops as the container which is the focus of the for loop is displayed in the loops header, meaning the programmer is not required to scan the loop to access if the loop is iterating through an array or container.
 
@@ -794,7 +795,7 @@ As the number of ways to use a for loop construct is limitless, the transform im
 
 
 The iterating over a container for loop type as shown previously in Figure \ref{fig:code-iterator}, is the first type the tranformation attempts to detect.
-The conditions for Iterator loop type, Figure \ref{fig:code-for-iter}, being met is that \texttt{CONT} must be a container which utilises the \texttt{begin} and \texttt{end} functions, the type, \texttt{TYPE}, of the container is not checked. The \texttt{it\_name} must also be the same variable across the three components of the for loop, and the cond-expression must be a \texttt{!=} operator, but the position of the arguments does not matter. To be matched to this use case the \texttt{COND} can not be a reference and the functions calls must directly follow the container. 
+The conditions for Iterator loop type, Figure \ref{fig:code-for-iter}, being met is that \texttt{CONT} must be a container which utilises the \texttt{begin} and \texttt{end} functions, the type, \texttt{TYPE}, of the container is not checked. The \texttt{it\_name} must also be the same variable across the three components of the for loop, and the cond-expression must be a \texttt{!=} operator, but the position of the arguments does not matter. To be matched to this use case the \texttt{COND} cannot be a reference and the functions calls must directly follow the container. 
 
 \begin{figure}[h]
     \centering
@@ -831,9 +832,9 @@ for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
 \end{figure}
 
 
-The second loop form attempts to match the use case where a array like container is utilised, meaning a container that is not iterated over but indexed into using array access notation or direct member functions, \texttt{at}. The requirement to match the second for loop, Figure \ref{fig:code-for-container}, are that \texttt{idx\_name} is a variable being declared which is assigned 0, and appears the same throughout the three components. The comparison, cond-expression, requires comparing \texttt{idx\_name} to the container, \texttt{COND}, where \texttt{idx\_name} is required to be less than a method call to function \texttt{size}. Finally the loop-expression of the for loop should be \texttt{idx\_name} in a pre/post increment operation.
+The second loop form attempts to match the use case where an array like container is utilised, meaning a container that is not iterated over but indexed into using array access notation or direct member functions, \texttt{at}. The requirement to match the second for loop, Figure \ref{fig:code-for-container}, are that \texttt{idx\_name} is a variable being declared which is assigned 0, and appears the same throughout the three components. The comparison, cond-expression, requires comparing \texttt{idx\_name} to the container, \texttt{COND}, where \texttt{idx\_name} is required to be less than a method call to function \texttt{size}. Finally the loop-expression of the for loop should be \texttt{idx\_name} in a pre/post increment operation.
 
-The final case, statically allocated arrays, that the transform attempts to transform is the shown in figure \ref{fig:code-for-stat}. The init-expression of the for is the same as previously case, while the cond-expression differs. The comparison is between \texttt{idx\_name} and either a number which matches the size of the allocated array, Figure \ref{fig:code-static-for-cmp-num}, or a \texttt{const} variable which is assigned the same value as the size of the array, Figure \ref{fig:code-static-for-cmp-var}. The variable has to be \texttt{const} to ensure the size is not altered before it is used in the comparison. The comparison allows operator \texttt{!=}, $<$ and $>$ where \texttt{idx\_name} has to be less than size used. 
+The final case, statically allocated arrays, that the transform attempts to transform is shown in figure \ref{fig:code-for-stat}. The init-expression of the for is the same as the previous case, while the cond-expression differs. The comparison is between \texttt{idx\_name} and either a number which matches the size of the allocated array, Figure \ref{fig:code-static-for-cmp-num}, or a \texttt{const} variable which is assigned the same value as the size of the array, Figure \ref{fig:code-static-for-cmp-var}. The variable has to be \texttt{const} to ensure the size is not altered before it is used in the comparison. The comparison allows operator \texttt{!=}, $<$ and $>$ where \texttt{idx\_name} has to be less than size used. 
 
 \begin{figure}[h]
     \centering
@@ -872,9 +873,9 @@ The final case, statically allocated arrays, that the transform attempts to tran
     % all distinct cases 
 
 \subsection{Loop information extracted}
-To preform necessary checks and traversals later in the transformation the container name and variable used in the needed to be extracted. For each for loop the transform would check if the loop matches any of the above cases and if so extracts the iterator, \texttt{it\_name}, or index,  \texttt{idx\_name}, from the init-expression. The container can be extracted from the cond-expression in the case of iterator for loop and the array like for loop, but this is not the case for the statically allocated array, only a value or variable representing the size is present. 
+To perform necessary checks and traversals later in the transformation the container name and variable used in the needed to be extracted. For each for loop the transform would check if the loop matches any of the above cases and if so extracts the iterator, \texttt{it\_name}, or index,  \texttt{idx\_name}, from the init-expression. The container can be extracted from the cond-expression in the case of an iterator for loop and the array like for loop, but this is not the case for the statically allocated array, only a value or variable representing the size is present. 
 
-The solution to locating the container utilised by the statically allocated type for loop was to traversal the loop body to find the array being indexed by the \texttt{idx\_name} variable. The search of the loop body would look for any array access notation and see if the index variable reference was the only expression present, \texttt{arr[idx\_name]}. If more than one array is being index the transform does not continue attempting to transform the loop, as ranged for only iterates over one container. If no container is found to be indexed the transform stops and the next for loop is checked.
+The solution to locating the container utilised by the statically allocated type for loop was to traversal the loop body to find the array being indexed by the \texttt{idx\_name} variable. The search of the loop body would look for any array access notation and see if the index variable reference was the only expression present, \texttt{arr[idx\_name]}. If more than one array is being indexed the transform does not continue attempting to transform the loop, as ranged for only iterates over one container. If no container is found to be indexed the transform stops and the next for loop is checked.
 
 
 %     % deciding what type of loop we are dealing with
@@ -887,7 +888,7 @@ The solution to locating the container utilised by the statically allocated type
 Assessing the safety of the transformation was the next significant challenge to handle, as certain uses of the iterator/index or container/array in the loop body could render the transformation to ranged-for invalid. The cases the transform aims to handle all have distinct ways the index/iterator or container/array are allowed to be used in loop body so are assess separately to assess safety.
 
 \subsubsection{Safety: Iterator loop body}\label{sec:safe-iter}
-The iterator for loop case differs from array like and statically allocated cases as the index is not a simple integer value, but a iterator that acts as a pointer to the object stored in the container. This means that in the body of the loop the iterator can only be deference directly or by using arrow expression, Figure \ref{fig:code-iter-uses}. If any other operation is preformed on the iterator then the transformation is considered invalid as altering the position of the iterator, \texttt{it\_name}, would not map to a full iteration through the container as is the case when using a ranged-for loop. 
+The iterator for loop case differs from the array-like and statically allocated cases as the index is not a simple integer value, but an iterator that acts as a pointer to the object stored in the container. This means that in the body of the loop the iterator can only be deference directly or by using arrow expression, Figure \ref{fig:code-iter-uses}. If any other operation is performed on the iterator then the transformation is considered invalid as altering the position of the iterator, \texttt{it\_name}, would not map to a full iteration through the container as is the case when using a ranged-for loop. 
 
 \begin{figure}[h]
     \centering
@@ -901,13 +902,13 @@ The iterator for loop case differs from array like and statically allocated case
     \label{fig:code-iter-uses}
 \end{figure}
 
-As the container is not required to be in the loop body to be indexed into, as is the cases for the other for loop types, any use or function call on the container in the loop body invalids the transform. The transform is invalidated as function calls, e.g \texttt{vec.push\_back(item)}, on the container could alter the underlying size of the container which could cause dangerous undefined behaviour when iterating through the transformed ranged-for. This would not necessarily happen but as the ranged-for takes a copy of the length of the array at the initialisation of the loop, any changes to the size of the array would make this copied length of the container outdated and lead the iterator to accessing invalid or wrong data. 
+As the container is not required to be in the loop body to be indexed into, as is the cases for the other for loop types, any use or function call on the container in the loop body invalids the transform. The transform is invalidated as function calls, e.g \texttt{vec.push\_back(item)}, on the container could alter the underlying size of the container which could cause dangerous undefined behaviour when iterating through the transformed ranged-for. This would not necessarily happen but as the ranged-for takes a copy of the length of the array at the initialisation of the loop, any changes to the size of the array would make this copied length of the container outdated and lead the iterator to access invalid or wrong data. 
 
 \subsubsection{Safety: Array like loop body}
-The array-like loop type requires additional checks in the loop body as the index has more restriction than the previous cases iterator. The index is restricted from being used outwith the array access notation, \texttt{vec[idx\_name]}, or in being used to index other containers/arrays. The index can also  be used in the containers member function \texttt{at}, such that \texttt{vec.at(idx\_name)}. The reason for restrictions are due the index being removed from source code and replaced with a variable that takes the current element of container being iterated through. So all uses of the index in expressions or outwith the loops container would become nonsensical after the transformation. The use of member functions of the container could, as mentioned before, alter the container where the iteration over the it by ranged-or after transformation could produce differing output than the intended effect. 
+The array-like loop type requires additional checks in the loop body as the index has more restriction than the previous cases iterator. The index is restricted from being used outwith the array access notation, \texttt{vec[idx\_name]}, or in being used to index other containers/arrays. The index can also  be used in the containers member function \texttt{at}, such that \texttt{vec.at(idx\_name)}. The reason for the restrictions is because the index is removed from source code and replaced with a variable that takes the current element of the container being iterated over. So all uses of the index in expressions or out with the loops container would become nonsensical after the transformation. The use of member functions of the container could, as mentioned before, alter the container where the iteration over it by ranged-for after transformation could produce different output than the intended. 
 
 \subsection{Safety: Statically allocated array }
-In the case of statically allocated arrays the check that the loop body is safe to transform is the same as listed for the Array like case but as basic array is being indexed and is not a container there is no additional checking for the \texttt{at()} method calls.  
+In the case of statically allocated arrays, the check that the loop body is safe to transform is the same as listed for the Array-like case but a basic array is being indexed and is not a container there is no additional checking for the \texttt{at()} method calls.  
 
 % two cases for this 
     % iterator
@@ -1087,7 +1088,7 @@ The \texttt{ValidArrayIndexTraversal} traversal searches for all pointer array r
         \centering
         \includegraphics[height=5.6cm]{images/init-list.png}
         \caption{List initialisation AST}
-        \label{fig:list-init-AST}
+        \label{fig:list-init-AST-var}
     \end{subfigure}
     \hfill
     \begin{subfigure}[b]{0.5\textwidth}
@@ -1096,11 +1097,11 @@ The \texttt{ValidArrayIndexTraversal} traversal searches for all pointer array r
     int arr[] = {1,2,3,4,5};
         \end{minted}
         \caption{List initialisation code}
-        \label{fig:list-init-code}
+        \label{fig:list-init-var-code}
     \end{subfigure}
     \vspace{-0.5cm}
     \caption{List initialisation of an Array}
-    \label{fig:list-init}
+    \label{fig:list-init-var}
 \end{figure}
 
 The size of the array is found by examining the declaration of the array, a pointer to it is stored in the SgVarRefExp node. The declaration can take the forms shown in Figure \ref{fig:code-static-for-cm} as well as a list initialisation. So  can be extracted from the non-list initialisation declaration by accessing the type of the variable declaration, SgArrayType, then getting size value with the function, \texttt{arraytype->get\_index()}. To uncover the size of the list initialise array, the number of child nodes of the \texttt{SgExprListExp} needed to be retrieved, Figure \ref{fig:list-init}. 
@@ -1123,10 +1124,10 @@ The final step in creating the range-based for are shown in Figure \ref{fig:rang
 \begin{figure}[H]
     \centering
     \begin{minted}{C++}
-	SgVariableDeclaration* range_variable =
-		buildVariableDeclaration(iterName, 
-		    buildReferenceType(
-		        buildTemplateType("auto"))); 
+    SgVariableDeclaration* range_variable =
+        buildVariableDeclaration(iterName, 
+            buildReferenceType(
+                buildTemplateType("auto"))); 
     \end{minted}
     \caption{Building range-declaration variable}
     \label{fig:range-dec-var}
@@ -1139,7 +1140,7 @@ SgRangeBasedForStatement* rangeFor =
     buildRangeBasedForStatement_nfi(range_variable,
                                     range_var,
                                     NULL, NULL, NULL, NULL,
-                                    buildBasicBlock());	
+                                    buildBasicBlock());    
     \end{minted}
     \caption{Building Ranged-based For}
     \label{fig:range-based-for-stmt}
@@ -1229,33 +1230,106 @@ replaceStatement(loopNode, rangeFor);
 %  extra: casting issues
 
 \section{Evaluation}
-The for-loop-rejuvenation defined in the previous sections will be evaluated, in a similar manor to the auto-rejuvenation with a comparison to an existing clang-tidy tool. The evaluation will compare what the transforms target, how they assess safety of transformation and there response to running on real world programmes.   
+The for-loop-rejuvenation defined in the previous sections will be evaluated, in a similar manor to auto-rejuvenation tool with a comparison to an existing clang-tidy tool. The evaluation will compare what the transforms target, how they assess safety of transformation and there response to running on real world programmes.   
 
 \subsection{Testing of rejuvenation and comparison to clang-tidy}
-As previous mentioned in Section \ref{sec:cmp-auto-reju-mod-auto} and related work Section \ref{sec:rw-clang-tidy}, clang-tidy features a set of modernize checks. The most relevant for comparing to the for-loop-rejuvenation is the the modernize-convert-loop \cite{FOR_CONVERT}, previously mention in Section \ref{sec:rw-clang-tidy}. As the for loop types targeted by for-loop-rejuvenation, Section \ref{sec:forLoop-scope-trans}, were based on those defined by, the modernize-loop-convert check the comparison between the tools is made easier. Both transformations handle loops over statically allocated arrays, containers, using iterators and array-like containers, using at or []. The transforms differ though in how they assess the safety of a transformation and how open or restrictive they are in allowing loops into each category. 
+As previous mentioned in Section \ref{sec:cmp-auto-reju-mod-auto} and related work Section \ref{sec:rw-clang-tidy}, clang-tidy features a set of modernize checks. The most relevant for comparing to the for-loop-rejuvenation is the the modernize-convert-loop \cite{FOR_CONVERT}, previously mention in Section \ref{sec:rw-clang-tidy}. As the for loop types targeted by for-loop-rejuvenation, Section \ref{sec:forLoop-scope-trans}, were based on those defined by the modernize-loop-convert check, the comparison between the tools is made easier. Both transformations handle loops over statically allocated arrays, containers using iterators and array-like containers using \texttt{at()} or \texttt{[]}. The transforms differ though in how they assess the safety of a transformation and how open or restrictive they are in allowing loops into each category. 
 
-The modernize-loop-convert implements a set of confidence level, risky, reasonable and safe, which dictate if the loop body is safe enough to allow for transformation of the loop. The risky confidence setting allows for loops to be transformed where methods of the container are called in the loop body while as well all all, reasonable confidence allows the conversion of those container which make calls to new \texttt{end()} or \texttt{size()}, similarly to the case shown in Figure \ref{fig:code-for-container}. Finally, the safe confidence level allows only the for loops that do not have criteria that would place them in the other two levels.
+The modernize-loop-convert implements a set of confidence levels, risky, reasonable and safe, which dictate if the loop body is safe enough to allow for transformation of the loop. The risky confidence setting allows for loops to be transformed where methods of the container are called in the loop body, reasonable confidence allows the conversion of those container which make calls to new \texttt{end()} or \texttt{size()}, similarly to the case shown in Figure \ref{fig:code-for-container}. Finally, the safe confidence level allows only the for loops that do not have criteria that would place them in the other two levels.
 
-The testing of both tranformation was conducted on a 
+The testing of for-loop-rejuvenation and modernise-loop-convert was conducted on a set of real world code sampled from existing SPEC 2017 CPU benchmarks. All the files utilised were designated pure C++ and were taken from 541.leela\_r \cite{SPEC_LEELA}, 5531.deepsjeng\_r \cite{SPEC_DEEPSJENG} and 523.xalancbmk\_r \cite{SPEC_XALANCBMK} benchmarks. The results from the testing are displayed in Table \ref{tab:for-tool-benchmark}, the columns denoting the number of converted for loops shows that the both transforms have a low hit rate at transforming for loops. This in no ways suggests the tools are defective or wrong as they are limited by the fact that most for loops do not fit the template of ranged-for loops, not without completely changing the intended purpose of the loop. However the test data does show that the impact the for-loop-rejuvenation can have, in its current form, is limited as it maybe too restrictive in selecting for loops for transformation.
 
+A reason for the reduced transformation rate in the for-loop-rejuevenation can be found in inspecting the for loops in the files that are not being transformed. The file \texttt{bitboard.cpp} in the \textit{deepsjeng} benchmark had a large number of for loop, 34, but a zero transformation rate, an example of one of its for loops is shown in Figure \ref{fig:code-untrans-example}. The example show that it is impossible for the transformation to processed as the loop does not have a single array as its focus but two. The \textit{bitboard} file as a whole faces this problem as it is utilising nearly all its for loops require access to multiple bitboards.
+
+\begin{figure}[!ht]
+    \centering
+    \begin{minted}{C++}
+        BITBOARD DiagMaska1h8[64],DiagMaska8h1[64];
+        for (i = 0; i < 64; i++){
+            DiagMaska1h8[i] = 0;
+            DiagMaska8h1[i] = 0;
+                    ...
+        }
+    \end{minted}
+    \caption{Example of a transform that is impossible}
+    \label{fig:code-untrans-example}
+\end{figure}
+
+The previous example showed the impracticality of the transformation in some cases but this is not the only reason some for loops are ignored. In the file  \texttt{TraverseSchema.cpp} from \textit{xalancbmk} benchmark suffers from a similar situation of having many for loop and non being selected for transformaion. Figure \ref{fig:no-rejuv-indirect-var} shows one of \texttt{TraverseSChema.cpp}'s for loop header, the could actually be transform as the loop body (not displayed) has not conflicts and the loop is bounded by a call to the \texttt{size} method \texttt{fIC\_Elements}. However, currently in for-loop-rejuvenation this is rejected as the transform would not identify the loop header as array-like but statically array then error on not finding a integer value after analysing \texttt{icListSize}. This loop form could be handled if references to containers were excepted along with array-like loops also allowing variable in the comparison expression for size. The problem remains, how far should the transformation follow the expression to determine if a loop is met   
+
+\begin{figure}[H]
+    \centering
+    \begin{minted}{C++}
+        unsigned int icListSize = fIC_Elements->size();
+        for (unsigned int i=0; i < icListSize; i++){ 
+                        ... 
+        }
+    \end{minted}
+    \caption{Example of possible transformation missed}
+    \label{fig:no-rejuv-indirect-var}
+\end{figure}
+
+\section{Summary}
+This chapter introduced the for-loop-rejuvenation and explored the transforms set of rules for detecting for loops and checking the 
+
+% zero hit rate on most tests 
+    
+% write about data, what is shows
+
+% try running the tests on multiple spec benchmarks and assessing the effectiveness discuss where it is lacking 
+
+% oracle style try on selected files - not hard ? 
+
+% give example of situation not caught code - bitboard
+    
+% clang get one better
+
+% TEST 1 - TraverseSchema.cpp
+    % unsigned int icListSize = fIC_Elements->size();
+    %         for (unsigned int i=0; i < icListSize; i++) {
+
+% TEST 2 - bitboard.cpp
+    % BITBOARD DiagMaska1h8[64], 
+    %      DiagMaska8h1[64];
+    % for (i = 0; i < 64; i++) {
+    %     DiagMaska1h8[i] = 0;
+    %     DiagMaska8h1[i] = 0;
+% TEST 3
+
+\begin{landscape}
 \begin{table}[H]
-    \begin{center}
-        \begin{tabular}{| l | l | l | l |}
-            \hline
-            \textbf{Benchmark}    & \textbf{File Name}    & \textbf{\# of lines}  & \textbf{\# of trans,} \\
-                                  &                       &                       & \textbf{auto-rejuv}   \\ \hline
-            Nanoflann    & nannoflann.cpp   & 2042  & 6  \\ \hline
-            Swarmz       & swarmz.cpp.cpp   & 344   & 29 \\ \hline
-            541.leela\_r & FastBoard.cpp    & 2452	& 13 \\ \hline
-                         & GTP.cpp          & 502	& 9  \\ \hline
-                         & UCTSearch.cpp    & 469   & 15 \\ \hline
-                         & UCTNode.cpp	    & 457   & 11 \\ \hline
-        \end{tabular}
-        \caption{Benchmark Test data of Project Auto }
-        \label{tab:auto-tool-benchmark-type-limit}
-    \end{center}
+\centering
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+Benchmark Test & File Name & \# of Lines & \# of for loops found & \# of trans rose-tool & \# of trans clang-tidy \\ \hline
+541.leela\_r & FastBoard.cpp & 2452 & 85 & 12 & 2 \\ \hline
+ & GTP.cpp & 502 & 6 & 1 & 1 \\ \hline
+ & FastState.cpp & 479 & 21 & 0 & 0 \\ \hline
+ & UCTSearch.cpp & 469 & 0 & 0 & 0 \\ \hline
+ & UCTNode.cpp & 456 & 3 & 0 & 0 \\ \hline
+ & Matcher.cpp & 100 & 3 & 0 & 0 \\ \hline
+ & SGFTree.cpp & 357 & 7 & 0 & 0 \\ \hline
+531.deepsjeng\_r & search.cpp & 1936 & 17 & 0 & 2 \\ \hline
+ & utils.cpp & 1109 & 16 & 0 & 0 \\ \hline
+ & pawn.cpp & 761 & 1 & 0 & 0 \\ \hline
+ & bitboard.cpp & 547 & 34 & 0 & 0 \\ \hline
+ & epd.cpp & 477 & 3 & 0 & 0 \\ \hline
+ & ttable.cpp & 278 & 5 & 0 & 0 \\ \hline
+ & moves.cpp & 227 & 18 & 0 & 0 \\ \hline
+523.xalancbmk\_r & TraverseSchema.cpp & 9060 & 39 & 0 & 0 \\ \hline
+ & SGXMLScanner.cpp & 4752 & 10 & 0 & 0 \\ \hline
+ & IGXMLScanner.cpp & 3296 & 5 & 0 & 0 \\ \hline
+ & DGXMLScanner.cpp & 3245 & 4 & 0 & 0 \\ \hline
+ & IGXMLScanner2.cpp & 3240 & 8 & 0 & 0 \\ \hline
+ & XMLUri.cpp & 2569 & 6 & 0 & 0 \\ \hline
+ & XTemplateSerializer.cpp & 2383 & 43 & 0 & 0 \\ \hline
+ & SchemaValidator.cpp & 2195 & 16 & 0 & 0 \\ \hline
+ & WFXMLScanner.cpp & 2150 & 5 & 0 & 0 \\ \hline
+\end{tabular}
+\caption{Benchmark Test data of for loop transforms }
+\label{tab:for-tool-benchmark}
 \end{table}
-
+\end{landscape}
 
 % Comparison to clang-tidy modernise-for-loop + Testing
     % explain what modernise-loop-convert does 
@@ -1267,9 +1341,6 @@ The testing of both tranformation was conducted on a
         % oracle to see how good performance is
         % what can be drawn from this comparison 
 
-
-% Problems in development - can be removed 
-
 % Limitations of the transformation
     % cases where it can be used are limitied 
     % can't catch most use cases of passing a variable to the statically allocated 
@@ -1277,9 +1348,6 @@ The testing of both tranformation was conducted on a
 
 % possible extensions - some what interesting
     % smarter types extraction for loop instead of always utilising auto
-
-\section{Summary}
-
 
 \chapter{Conclusion \& Further work}
 
