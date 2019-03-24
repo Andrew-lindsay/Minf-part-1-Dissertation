@@ -33,25 +33,45 @@ Acknowledgements go here.
 
 %\pagenumbering{arabic}
 
-\chapter{Introduction} \label{Introduction}% 
-% Introduction and synopsis, 
-% Discussion of the work undertaken
-% make it clear what was completed
-% explain layout of report
-% remember to cite the 
+\chapter{Introduction} \label{Introduction}
+
+% overview
+
 % \section{What is source code rejuvenation ?}
 
-% Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write. This code could be many years old but still requires maintaining as it is part of a larger system within a company. This kind of situation is common, and the code these developers have to maintain is colloquially referred to as legacy code. 
+%  add metric about amount of legacy code (hard to find)
+Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write, and  which has not been actively developed for sometime. This code could be many years old but still requires maintaining as it is part of a larger system within a company. This is a common occurrence within the industry, and the code these developers have to maintain is colloquially referred to as legacy code. As legacy code could be considerably old, it may not utilise modern features or practises of a language, resorting to workarounds and idioms that are deprecated. The lack of use of these newer features create difficult as mixing of old a new practices creates even harder to maintain code. All of these features of legacy code place barriers in the way of new developers trying to maintain, alter and improve the system. 
 
-% As legacy code could be considerably old, it may not utilise modern feature and practises. (NOT FINISHED WAS MOVED FROM BACKGROUND)
+Source code rejuvenation aims to remove these barriers by utilising modern language features as well as new standard library additions in place of workarounds and idioms that do not express the intent of the underlying code in a satisfactory way. The use of modern features over old also allows for the improved safety of code as many old techniques did not treat security as a priority. Manual rejuvenation of source code could be a proposed solution to the problems above but the task is difficulty and error prone as repetitive nature of the task increases the chance of introducing a mistake. So it is critical to automate this rejuvenation, to reduce the chance of error but to also allow the rejuvenation of code to scale to the size of legacy applications which could in hundreds of thousands of lines of code. 
 
-% intro about why we need rejuvenation
+It should be noted that 
+
 % what is rejuvenation 
 
-% \section{Why it is not Refactoring}  
-% main difference from refactoring is the willingness to change semantics of the code 
+% Intro about why we need rejuvenation
+% benefits gained from utilising rejuvenation
+    % manual migration is hard
+    
+% what is re-factoring how it relates to rejuvenation 
+    % different methodologies or intents needs to be discussed
+
+% statics on amount of legacy code in industry or devs working on 
+% read Stroustrup paper 
+
+\section{Aim}
+    %  C++, set of new feature 
+    % compare and contrast clang-tidy
+    % 
+
+\section{Outcomes ? Can be skipped or combined} 
+
+\section{Contributions}
+
+\section{Outline}
+
 
 \chapter{Background \& Related Work}
+
 %intro the 
 This chapter aims to give the reader the required foundational knowledge to understand the work presented in the report. C++ versions are briefly explained with relation to the features utilised in the transforms, noting where the features were first introduced. An overview of the compilation process, stating where it differs from a typical compilation process.
 The compiler framework Rose is discussed and contrasted with the Clang/LLVM compiler framework, with reflection on why Rose was chosen over Clang. Finally, related work in the area of rejuvenation and refactoring is presented.
@@ -281,7 +301,7 @@ As previously stated, the output style format of the code needs to be specified 
 
 \section{Related work}
 % number of tools, what they are for. areas that will be talked about 
-There exist a number of tools aiming to aide in the development of software by suggesting or implementing transformations. Code Re-factoring \cite{REFACTOR} is a well-versed area with a lot of integration with modern development environments. Even though refactoring has a different underlying philosophy to altering code as discussed in Section \ref{Introduction} its mission is similar to this project. Another related tool is clang-tidy created by the Clang front-end developers that follow a similar ideology to altering the code as transforms presented in this project. Both refactoring approaches and clang-tidy are discussed in this subsection.
+There exist a number of tools to aid in the development of software by suggesting or implementing transformations. Code Re-factoring \cite{REFACTOR} is a well-versed area with a lot of integration with modern development environments. Even though refactoring has a different underlying philosophy to altering code as discussed in Section \ref{Introduction} its mission is similar to this project. Another related tool is clang-tidy created by the Clang front-end developers that follow a similar ideology to altering the code as transforms presented in this project. Both refactoring approaches and clang-tidy are discussed in this subsection.
 
 \subsection{Clang-tidy}\label{sec:rw-clang-tidy}
 Clang-tidy \cite{CLANG_TIDY} is a clang tool that features numerous sets of static analysis checks for a variety of areas. These include checks for bug-prone code constructs, coherence to a wide range of coding conventions and checking for performance related issues. Clang-tidy also features a set of checks called modernize checks, that target the same style of rejuvenations as mentioned in this project. The clangs modernize checks assess where new C++11 and higher features could be used in place of other methods in the source code. The checks include the likes of "modernize-use-nullptr" which searches for uses of the old keyword \textit{NULL} and replaces them which the C++11 keyword \texttt{nullptr}.
