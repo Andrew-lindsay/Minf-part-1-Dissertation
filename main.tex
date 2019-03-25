@@ -40,11 +40,32 @@ Acknowledgements go here.
 % \section{What is source code rejuvenation ?}
 
 %  add metric about amount of legacy code (hard to find)
-Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write, and  which has not been actively developed for sometime. This code could be many years old but still requires maintaining as it is part of a larger system within a company. This is a common occurrence within the industry, and the code these developers have to maintain is colloquially referred to as legacy code. As legacy code could be considerably old, it may not utilise modern features or practises of a language, resorting to workarounds and idioms that are deprecated. The lack of use of these newer features create difficult as mixing of old a new practices creates even harder to maintain code. All of these features of legacy code place barriers in the way of new developers trying to maintain, alter and improve the system. 
+Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write, and  which has not been actively developed for sometime. This code could be many years old but still requires maintaining as it is part of a larger system within a company. This is a common occurrence within the industry, and the code these developers have to maintain is colloquially referred to as legacy code. As legacy code could be considerably old, it may not utilise modern features or practises of a language, resorting to workarounds and idioms that are deprecated. The developers working on legacy code will not be well versed in the old idioms, as they have been trained on more modern approaches so when employing these new techniques a problem raises in mixing old and new which makes the code harder to maintain. All of these features of legacy code place barriers in the way of new developers trying to maintain, alter and improve the system. 
 
-Source code rejuvenation aims to remove these barriers by utilising modern language features as well as new standard library additions in place of workarounds and idioms that do not express the intent of the underlying code in a satisfactory way. The use of modern features over old also allows for the improved safety of code as many old techniques did not treat security as a priority. Manual rejuvenation of source code could be a proposed solution to the problems above but the task is difficulty and error prone as repetitive nature of the task increases the chance of introducing a mistake. So it is critical to automate this rejuvenation, to reduce the chance of error but to also allow the rejuvenation of code to scale to the size of legacy applications which could in hundreds of thousands of lines of code. 
+% why legacy code makes it hard to maintain alter and improve
+    % mixing coding practises and style
+    % less safe, safety was not an priority programmer had to be careful, diligent 
+    % New developers do not know the intricacies of the old idioms and how they work,
+    % 
 
-It should be noted that 
+% why source code rejuvenation is good
+    % higher levels of abstraction make information more explicit, so easier to understand the intent of the code
+    % Can offer additional information to the compiler to enable optimisation that may be obscured in a more complex idiom.
+    
+Source code rejuvenation aims to remove these barriers by utilising modern language features as well as new standard library additions in place of workarounds and idioms that do not express the intent of the underlying code in a satisfactory way. The use of modern features over old also allows for the improved safety of code as many old techniques do not treat security as a priority. Another advantage is that newer language features introduce higher levels of abstraction which can make information more explicit to other programmers and the compiler. This allows for the intent of the code to be more clearly stated instead of being hidden in an obtuse implementation. 
+
+Manual rejuvenation of source code could be a way to handle old legacy code but as the task is difficulty and error prone as the repetitive nature of the task increases the chance of introducing mistakes it is not suitable solution. So it is critical to automate this rejuvenation, to reduce the chance of error but to also allow the rejuvenation of code to scale to the size of legacy applications which could in hundreds of thousands of lines of code.
+
+Source code rejuvenation is related to, but is a distinct field from, the more prevalent process of code restructuring known as refactoring~\cite{REFACTOR_BOOK}. Refactoring is defined as a process of improving the internal structure of the code without altering its external behaviour in the wider system. The underlying difference separating rejuvenation from refactoring is that code rejuvenations are willing to alter the external behaviour in such away to better express the intent of the programmer. The above statement can also be expressed as refactoring being directed at improving the structure of the code, while source code rejuvention being directed at improving all aspects of the code through the use the use of newer language and library constructs. The improvements that could be introduced by new language features and standard library tools include using data structures that introducing bound checking, standard interface when utilising standard library data structures. The way the two techniques are deployed also differs as the source code rejuvenation is single transformation pass of existing source code, as shown in chapters \ref{chp:auto-tranform}, \ref{chp:loop-transform}, while refactoring is seen as an on going maintenance task. 
+
+% one time rejuvenation pass, as all the transform  , while refactoring is a continual maintaince task 
+
+% should not
+
+% exception handling or bound checking, 
+
+% what is the target
+    % legacy code
 
 % what is rejuvenation 
 
@@ -58,17 +79,22 @@ It should be noted that
 % statics on amount of legacy code in industry or devs working on 
 % read Stroustrup paper 
 
-\section{Aim}
-    %  C++, set of new feature 
-    % compare and contrast clang-tidy
+\section{Aims}
+% purpose
+    %  implement a set of source code rejuvenation 
+    %  evaluate the source code rejuvenation on a set of benchmarks
+    %  comparison to an existing system
     % 
 
 \section{Outcomes ? Can be skipped or combined} 
 
+
+
 \section{Contributions}
+%  as a list
 
 \section{Outline}
-
+% chapter by chapter  
 
 \chapter{Background \& Related Work}
 
@@ -319,7 +345,9 @@ Refactoring, as shown by the condition extraction, does not shy away from alteri
 % ease of use for developers, interactive
 %  extend of actually code manipulation 
 
-\chapter{Transform to Utilise Automated Type Inference}
+%  ========================================= CHAPTER AUTO REJUV =======================================
+
+\chapter{Transform to Utilise Automated Type Inference}\label{chp:auto-tranform}
 The Chapter discusses the first of the rejuvenations of this report, which promotes the use of type inference. An explanation of the rejuvenation will be given along with the break down of the conceptual challenges the transform presents. An overview of the implementation is presented showing how the rejuvenation utilised the Rose framework to realise the transform. Finally, an evaluation of the pass and where improvements could be made is used to conclude.
 
 \section{Introduction}
