@@ -171,19 +171,21 @@ C++ has been in existence since 1985 with the first standard being introduced in
     \centering
     \begin{subfigure}[b]{0.5\textwidth}
         \begin{minted}{C++}
-int a[] ={1,2,3,4,5};
+        int a[] ={1,2,3,4,5};
         \end{minted}
         \caption{List initialisation of static array}
+        \vspace{0.2cm}
         \label{fig:vec-list-a}
     \end{subfigure}
     
     \begin{subfigure}[b]{0.5\textwidth}
         \begin{minted}{C++}
-vector<int> b = {1,2,3,4,5};
+        vector<int> b = {1,2,3,4,5};
         \end{minted}
         \caption{List Initailisation of vector, added in C++11}
         \label{fig:vec-list-b}
     \end{subfigure}
+    
     \caption{List initialisation}
     \label{fig:vec-list}
 \end{figure}
@@ -411,7 +413,7 @@ Refactoring, as shown by the condition extraction, does not shy away from alteri
 %  ========================================= CHAPTER AUTO REJUV =======================================
 
 \chapter{Transform to Utilise Automated Type Inference}\label{chp:auto-tranform}
-The Chapter discusses the first of the rejuvenations of this report, which promotes the use of type inference. An explanation of the rejuvenation will be given along with the break down of the conceptual challenges the transform presents. An overview of the implementation is presented showing how the rejuvenation utilised the Rose framework to realise the transform. Finally, an evaluation of the pass and where improvements could be made is used to conclude.
+This Chapter discusses the first source code rejuvenation of the report, which promotes the use of type inference. An explanation of the rejuvenation will be given along with the break down of the conceptual challenges the transform presents. An overview of the implementation is presented showing how the rejuvenation utilised the Rose framework to realise the transform. Finally, an evaluation of the pass and where improvements could be made is used to conclude.
 
 \section{Introduction}
 Type inference is a mechanism that enables the type of an expression to be deduced without needing to be explicitly stated,. In the case of variable declaration \texttt{int x = 5}, this could become simply \texttt{x = 5}. Type inference has the benefit of reducing programmer time spend typing laborious type signature, that may even be redundant based on the context surrounding the code. 
@@ -430,9 +432,9 @@ std::vector<std::string>::iterator iterName = studentNames.begin();
         \caption{Standard type signature}
         \label{fig:auto-type-before}
     \end{subfigure}
-    
     \begin{subfigure}[h]{\textwidth}
         \centering
+        \vspace{0.2cm}
         \begin{minted}{C++}
                 auto iterName = studentNames.begin(); 
         \end{minted}
@@ -690,7 +692,7 @@ As stated in Section \ref{sec:auto-scop-trans}, strict adherence to a coding con
 
 % overly applied transform, many cases not yet checked which could cause problems as transform it not conservative in nature
 
-As stated above the transform is not very conservative in nature as it tries to alter every variable declaration. It was seen during testing on real-world code examples that this is a very error-prone approach as the complexity of the C++ language leads to many unforeseen cases where the transform fail unexpectedly. To create a production-ready version of the tool in this form would require significant testing or alter it to target more specific use cases of \texttt{auto} type inference.
+As stated above the transform is not design to be conservative as it tries to alter every variable declaration. It was seen during testing on real-world code examples that this is a very error-prone approach as the complexity of the C++ language leads to many unforeseen cases where the transform fail unexpectedly. To create a production-ready version of the tool in this form would require significant testing or alter it to target more specific use cases of \texttt{auto} type inference.
 
 \subsection{Comparison to Clang-tidy \& Testing }\label{sec:cmp-auto-reju-mod-auto}
 
@@ -921,7 +923,7 @@ for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
         \end{minted}
         \caption{Iterator Loop Type }
         \label{fig:code-for-iter}
-        \vspace{0.40cm}
+        \vspace{0.2cm}
     \end{subfigure}
     
     \begin{subfigure}[h]{\textwidth}
@@ -930,6 +932,7 @@ for(TYPE it_name = CONT.begin(); it_name != CONT.end(); it_name++)
     \end{minted}
     \caption{Array-like container Loop Type}
     \centering
+    \vspace{0.2cm}
     \label{fig:code-for-container}
     \end{subfigure}
 
@@ -1356,7 +1359,7 @@ The modernize-loop-convert implements a set of confidence levels, risky, reasona
 
 The testing of for-loop-rejuvenation and modernise-loop-convert was conducted on a set of real-world code sampled from existing SPEC 2017 CPU benchmarks. All the files utilised were designated pure C++ and were taken from 541.leela\_r \cite{SPEC_LEELA}, 5531.deepsjeng\_r \cite{SPEC_DEEPSJENG} and 523.xalancbmk\_r \cite{SPEC_XALANCBMK} benchmarks. The results from the testing are displayed in Table \ref{tab:for-tool-benchmark}. The columns denoting the number of converted for loops shows that both transforms have a low hit rate at transforming for-loops. This in no ways suggests the tools are defective or wrong as they are limited by the fact that most for loops do not fit the template of ranged-for loops, not without completely changing the intended purpose of the loop. However, the test data does show that the impact the for-loop-rejuvenation can have, in its current form, is limited as it may be too restrictive in selecting for loops for transformation.
 
-A reason for the reduced transformation rate in the for-loop-rejuvenation can be found in inspecting the for loops in the files that are not being transformed. The file \texttt{bitboard.cpp} in the \textit{deepsjeng} benchmark had a large number of for loop, 34, but a zero transformation rate, an example of one of its for loops is shown in Figure \ref{fig:code-untrans-example}. The example shows that it is impossible for the transformation to processed as the loop does not have a single array as its focus but two. The \textit{bitboard} file faces this problem as nearly all its for-loops are required access to multiple bitboards for calculating results.
+A reason for the reduced transformation rate in the for-loop-rejuvenation can be found in inspecting the for loops in the files that are not being transformed. The file \textit{bitboard.cpp} in the \textit{deepsjeng} benchmark had a large number of for loop, 34, but a zero transformation rate, an example of one of its for loops is shown in Figure \ref{fig:code-untrans-example}. The example shows that it is impossible for the transformation to proceed as the loop does not have a single array as its focus but two. The \textit{bitboard} file faces this problem as nearly all its for-loops need to access multiple arrays of type \texttt{BITBOARD} to calculate results.
 
 \begin{figure}[!ht]
     \centering
@@ -1372,7 +1375,7 @@ A reason for the reduced transformation rate in the for-loop-rejuvenation can be
     \label{fig:code-untrans-example}
 \end{figure}
 
-The previous example showed the impracticality of the transformation in some cases, but this is not the only reason some for loops are ignored. The file \texttt{TraverseSchema.cpp} from \textit{xalancbmk} benchmark suffers from a similar situation of having many for loop and non being selected for transformation. Figure \ref{fig:no-rejuv-indirect-var} shows one of \texttt{TraverseSChema.cpp}'s for loop header, that could actually be transform as the loop body has no conflicts and the loop is bounded by a call to the \texttt{size} method \texttt{fIC\_Elements}. However, currently in for-loop-rejuvenation, this is rejected as the transform would not identify the loop header as array-like but statically array then error on not finding an integer value after analysing \texttt{icListSize}. This loop form could be handled if references to containers were excepted along with array-like loops also allowing variable in the comparison expression for size. The problem remains, how far should the transformation follow the expression to determine if a loop is transformable. In this case the call to \textit{size} is only contained in a local variable \texttt{icListSize = fIC\_Elements->size()} but if the variable utilised was an argument that had been passed to the function the difficulty increases dramatically. 
+The previous example showed the impracticality of the transformation in some cases, but this is not the only reason some for-loops are ignored. The file \textit{TraverseSchema} from \textit{xalancbmk} benchmark suffers from a similar situation of having many for loop and non being selected for transformation. Figure \ref{fig:no-rejuv-indirect-var} shows one of \textit{TraverseSchema}'s for loop header, that could actually be transform as the loop body has no conflicts and the loop is bounded by a call to the \texttt{size} method of \texttt{fIC\_Elements}. However, currently in for-loop-rejuvenation, this is rejected as the transform would not identify the loop header as array-like but statically array then error on not finding an integer value after analysing \texttt{icListSize}. This loop form could be handled if references to containers were excepted along with array-like loops also allowing variable in the comparison expression for size. The problem remains, how far should the transformation follow the expression to determine if a loop is transformable. In this case the call to \texttt{size} is only contained in a local variable \texttt{icListSize = fIC\_Elements->size()} but if the variable utilised was an argument that had been passed to the function the difficulty increases dramatically. 
 
 \begin{figure}[H]
     \centering
@@ -1458,17 +1461,55 @@ Benchmark Test & File Name & \# of Lines & \# of for loops found & \# of trans r
     % smarter types extraction for loop instead of always utilising auto
 
 \chapter{Conclusion \& Further work}
+% intro, what this chapter will contain 
+The following chapter provides a conclusion to the report, summarising the evaluations of the source code rejuvenations as well as presenting an explanation of the wider problems faced in designing source code rejuvenation tools. A discussion of further work is also included referencing again the simple extensions than can be made to the source code rejuvenations presented in the report. After the possible changes to the current tools are show, additional passes which could offer rejuvenations to other areas of source code are presented. Finally, a discussion of a different approach to designing source code rejuvenations is given, focusing on how a new approach can help simplify the creation of new tools.   
 
 \section{Conclusion}
-% the transforms give above show how hard it can be to balance complexity with the scope and effectiveness of transformations  
+
+The first Source code rejuvenation featured in the report, \textit{auto-rejuvenation}, suffered several conceptual problems in its approach to performing its rejuvenation of variable declarations. A central problem identified when transforming variable declaration type signatures, to utilises the \texttt{auto} keyword, was that in many places replacing the type lead to harder to read code as information provided in the type which add context to the declaration was being removed, Figure~\ref{fig:reduce-info-auto}. 
+
+
+\begin{figure}[H]
+    \centering
+    % \includegraphics{}
+    \caption{Example: utilising \texttt{auto} reduces contextual information for variable}
+    \label{fig:reduce-info-auto}
+\end{figure}
+
+Another problem from the over application of the \texttt{auto} keyword was that basic types did not gain anything from utilising \texttt{auto} as types such as \texttt{int}, \texttt{bool} and \texttt{char} all are of equal length to \texttt{auto}. So replacement is seen as meaningless in the best scenario or hurtful if it reduces useful context to the programmer. The meaningless or hurtful replacements of certain type signature introduced an important consideration when designing rejuvenation, in that applying new features to old code blindly does not amount to rejuvenation in the sense of improving code. Rejuvenation should be applied in ways to actually improve code so to bring new life to it by making it easier to maintain and extend. 
+
+The problems related to the over application of \textit{auto-rejuveantions}'s transform showed the complexity of designing effective transforms and how careful thought is required when selecting the code to be transformed. As C++ is not a dynamically typed language so requires statically defined types these types become apart of the style of writing C++ so to aimlessly apply the transform is not advised. The use of \texttt{auto} does offer benefit of remove the verbose type signatures but a balance is required to produce the best possible outcome from transformation. (coding style plays a factor).
+
+The \texttt{for-loop-rejuvenation} suffers from distinct problems from the previous transformations as its hit rate, even on large sample set, is near zero. The main factors attributing to this reduction where many missed opportunities to transform for-loops due to the main patterns of for-loops use by programmer being missed, as well as many for loops being impossible to transform to utilise the ranged-for construct as they do not feature a single array being completely traversed. 
+
+The two previously mentions factors restricting the transformations are not specific to the \textit{for-loop-rejuvenation} transform, as these factors along could effect a wide range of rejuvenation attempt. The core reason these factors limit effectiveness are that not all code can be transformed, so there is a trade of in the complexity of design a rejuvenation tool and whether the target of it actually appear in real-world code. As the real usefullyness of rejuvenation is in actually transforming code. 
+
+%
+
+% other languages do not require types at all 
+
+% summary of results explainations of what was found/discovered when designing and evaluating the tools
+
+% the transforms given above show how hard it can be to balance complexity with the scope and effectiveness of transformations  
+
 
 
 \section{Further work}
 % more complex rejuvenation pass with requires several passes over the source code or require large spanning checks on the ast, like detecting user defined linked lists 
 
+% extension for the for-loop-reju addition pre traversal pass to allow for better 
+
 % simple extensions
+    % reference the chapters and explain
 % additional passes 
+    % user defined linked list
+        %  why it is hard
+        %  how it can be more beneficial than previous passes
 % creating a better interface to create transformations 
+    % pattern matching interface 
+    % 
+    
+% what am I actually going to build upon
 
 % %%%%%%%%%%%%FORGOTTEN CHAPTERS%%%%%%%%%%%%%%%%%%%
 % \chapter{Initialised List}
