@@ -1500,7 +1500,9 @@ There are many pitfalls and misguided improvements that can occur when developin
 % extension for the for-loop-reju addition pre traversal pass to allow for better 
 
 \subsection{Extensions to current souce code rejuvenations}
-In the evaluation of the source code rejuvenation additional extensions where given to the both the \textit{auto-rejuvenation} and  \textit{for-loop-rejuvenation}. It was suggested that the \textit{auto-rejuvenation} which was previously restricted to using \texttt{auto} on variable declarations only be allowed to use \texttt{auto} for the return type of the function declarations.
+In the evaluation of the source code rejuvenations additional extensions where given for both the \textit{auto-rejuvenation} and  \textit{for-loop-rejuvenation}. It was suggested that the \textit{auto-rejuvenation} which was previously restricted to using \texttt{auto} on variable declarations also be allowed to utilise \texttt{auto} for the return type of the function declarations, Figure \ref{fig:funct-ret-inferred}.
+
+The suggested extension to \textit{for-loop-rejuvenation} was the additional use of a wider range of patterns more inline with the programmers actual uses of for-loops so to improve the rate at which they would be transformed to use the ranged-for construct.
 
 % The \textit{for-loop-rejuvenation} suggested extension was to add additional an additional traversal pass to allow for constant propagation through the use of function to allow for the case where the for-loop takes place inside a function where the size of the array being iterated over is taken as an argument, Figure \ref{}. This was previously not possible as for statically allocated arrays is would try to follow the variable utilising the slide  
 
@@ -1522,6 +1524,23 @@ The transformation process for the uses of a user defined lists also introduces 
 The benefits of rejuvenating user defined lists are the well documented interfaces to the standard library implementations which means that developer will not have to search for and try to understand the those implement in the old code which could lack useful documentation. The standard library implementations also offer tried and tested implementations which are significantly less likely to include bugs than those found in unmaintained code.
 
 \subsection{Developing future rejuvenations}
+One of the main difficulties of implementing source code rejuvenation in frameworks like the Rose compiler is the verbose way required to match against segments of the AST. As can be seen in the implementation sections of source code rejuvenations produced in this report, searching for matching AST subtree requires checking each node for the correct type, requiring \texttt{NULL} checks and calls to subsequent child nodes. When using this approach, altering the code to allow for a more variation in matching of the AST (e.g matching multiple types of variable declarations) results in a large amount of additional type of node checks as well as complex conditional if logic. 
+
+There is a desire to remove this requirement in having to detect target AST subtrees by matching individual nodes directly as it is more of an implementation detail than directly connected to the rejuvenation which is trying to be implemented. There has been additional to make the matching of AST subtrees or even individual nodes easier, clangs AST matchers \cite{} and Rose AST query interface \cite{}, but neither are directly focused at aiding source code rejuvenation. 
+
+A solution to the problem could utilise a system similar to regular expressions for matching text \cite{} but with the of matching AST nodes as shown in the Figure \ref{fig:adv-ast-matching}. The the textual representation could utilise variable which are match in the underlying implementation, so for example the text used in Figure \ref{fig:adv-ast-matching} matches against all for-loops which have the same variable across all component which is labled as \$i. The implementation could handle other such 
+
+ \begin{figure}[H]
+    \centering
+    \begin{minted}{C++}
+    vector<SgNodes> rootNodesOfPattern =
+        MatchPattern(astRoot,
+            "for(int \$(i) = 0; \$(i) < \$NUMBER; \$(i)++")
+    \end{minted}
+    \caption{Possible textual representation of matching AST segment}
+    \label{fig:adv-ast-matching}
+\end{figure}
+
 
 
 % simple extensions
