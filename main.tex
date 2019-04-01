@@ -1530,13 +1530,24 @@ The suggested extension to \textit{for-loop-rejuvenation} was the additional use
 %  additional utilisation become available for the keywords between uses 
 
 \subsection{Additional source code rejuvenations}
-The number of possible rejuvenations even within the C++ language is much larger than the those discussed in this report. A further rejuvenation which could be implemented is the detection of user-defined linked lists and transform them use to utilise a standard library implementation such as \texttt{std::list}. The complexity of this source code rejuvenations lays in two areas, identifying an occurrence of a user-defined list and detecting the type of list it is. Identifying a user-defined linked list is more complicated than both of the rejuvenation tools discussed previously as the implementation of the list could be spread throughout the source file, and requires checking the definitions and several functions to see if the operations defined for the list are in line with those also provided by different standard library list implementations. As the ways to implement a list are very open-ended the transform would have to handle a very wide scope of definitions for a list as well as differentiating between doubly linked list, circular list and singly linked lists.
+The number of possible rejuvenations even within the C++ language is much larger than the those discussed in this report. A further rejuvenation which could be implemented is the detection of user-defined list, Figure~\ref{fig:user-def-list}, and transform them use to utilise a standard library implementation such as \texttt{std::list}. The complexity of this source code rejuvenations lays in two areas, identifying an occurrence of a user-defined list and detecting the type of list it is. Identifying a user-defined linked list is more complicated than both of the rejuvenation tools discussed previously as the implementation of the list could be spread throughout the source file, and requires checking the definitions and several functions to see if the operations defined for the list are in line with those also provided by different standard library list implementations. As the ways to implement a list are very open-ended the transform would have to handle a very wide scope of definitions for a list as well as differentiating between doubly linked list, circular list and singly linked lists.
 
 % example
-\begin{figure}[H]
+\begin{figure}[htb]
     \centering
-        
-    \caption{Example of a user defined list in C}
+    \begin{minted}{C++}
+                    struct node{
+                        void* info;
+                        struct node *next;
+                    };
+                    
+                    Class List{
+                        void push_back(int);
+                        void pop_front();
+                            ...
+                   }
+    \end{minted}
+    \caption{Example of a user defined list}
     \label{fig:user-def-list}
 \end{figure}
 
@@ -1544,14 +1555,12 @@ The transformation process for the uses of user-defined lists also introduces ne
 
 The benefits of rejuvenating user-defined lists are the well documented interfaces for standard library implementations which means that developer will not have to search for and try to understand those implement in the old code which could lack useful documentation. The standard library implementations also offer tried and tested implementations which are significantly less likely to include bugs than those found in unmaintained code.
 
-
 \subsection{Developing future rejuvenations}
 One of the main difficulties of implementing source code rejuvenation in frameworks like the Rose compiler is the verbose way required to match against segments of the AST. As can be seen in the implementation sections of source code rejuvenations produced in this report, searching for matching AST subtree requires checking each node for the correct type, requiring \texttt{NULL} checks and calls to subsequent child nodes. When using this approach, altering the code to allow for a more variation in the matching of the AST (e.g matching multiple types of variable declarations) results in a large amount of additional type of node checks as well as complex conditional if logic. 
 
-There is a desire to remove this requirement in having to detect target AST subtrees by matching individual nodes directly as it is more of an implementation detail than directly connected to the rejuvenation which is trying to be implemented. There has been attempts to make the matching of AST subtrees or even individual nodes easier, clangs AST matchers \cite{} and Rose AST query interface \cite{}, but neither are directly focused at aiding source code rejuvenation. 
+There is a desire to remove this requirement in having to detect target AST subtrees by matching individual nodes directly as it is more of an implementation detail than directly connected to the rejuvenation which is trying to be implemented. There has been attempts to make the matching of AST subtrees or even individual nodes easier, clang's AST matchers~\cite{CLANG_MATCH_AST} and Rose AST query interface~\cite{ROSE_TUT_AST_QUERY}, but neither are directly focused at aiding source code rejuvenation. 
 
-A solution to the problem could utilise a system similar to regular expressions for matching text \cite{} but with the of matching AST nodes as shown in  Figure \ref{fig:adv-ast-matching}. The textual representation could utilise variables which are then matched in the underlying implementation, so, for example, the text used in Figure \ref{fig:adv-ast-matching} could match against all for-loops which have the same variable across all component which is labelled as \$i. The implementation could be able to handle other constructs like all nodes that equate to number values such as \textit{SgIntVal}, \textit{SgLongVal} etc by referencing some placeholder like \$NUMBER. The intention of the code below would be to return a list of for-loop nodes matching the pattern which could then be used to begin the transformation.
-
+A solution to the problem could utilise a system similar to regular expressions for matching text~\cite{Aho:1992:FCS:114768} but with the of matching AST nodes as shown in  Figure \ref{fig:adv-ast-matching}. The textual representation could utilise variables which are then matched in the underlying implementation, so, for example, the text used in Figure \ref{fig:adv-ast-matching} could match against all for-loops which have the same variable across all component which is labelled as \$i. The implementation could be able to handle other constructs like all nodes that equate to number values such as \textit{SgIntVal}, \textit{SgLongVal} etc by referencing some placeholder like \$NUMBER. The intention of the code below would be to return a list of for-loop nodes matching the pattern which could then be used as a starting point to begin the transformation.
 
  \begin{figure}[H]
     \centering
@@ -1564,8 +1573,7 @@ A solution to the problem could utilise a system similar to regular expressions 
     \label{fig:adv-ast-matching}
 \end{figure}
 
-
-The use of a higher level interface for pattern matching the AST removes a lot of the tediousness in trying to detect pattern, allowing for the focus to be on the transformation at hand. The text interface lends its self to quick prototyping unlike the large scale changes need to check every new node in a pattern, meaning the turn around time in testing which patterns actually results in the highest hit rate on real-world code. Even though the implementation details would be large undertaking it is clear that the system or a similar one would be of great benefit to the creation of rejuvenations.
+The use of a higher level interface for pattern matching on the AST removes a lot of the tediousness in trying to detect a pattern, allowing for the focus to be on the transformation at hand. The text interface lends its self to quick prototyping unlike the large scale changes need to check every new node in a pattern, meaning the turn around time in testing which patterns actually results in the highest hit rate on real-world code. Even though the implementation details would be a large undertaking it is clear that the system or a similar one would be of great benefit to the creation of rejuvenations.
 
 % simple extensions
     % reference the chapters and explain
