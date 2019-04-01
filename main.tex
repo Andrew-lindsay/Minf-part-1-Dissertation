@@ -36,14 +36,42 @@ Acknowledgements go here.
 
 \chapter{Introduction} \label{Introduction}
 
-% overview
+\section{Overview}
 
 % \section{What is source code rejuvenation ?}
 
 %  add metric about amount of legacy code (hard to find)
-Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write, and which has not been actively developed for some time. This code could be many years old but still, require maintaining as it is part of a larger system within a company. This is a common occurrence within the industry, and the code these developers have to maintain is colloquially referred to as legacy code. 
+Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write, and which has not been actively developed for some time. This code could be many years old but still require maintenance as it is part of a larger system within a company. This is a common occurrence within the industry, and many developers define this type of code as legacy code~\cite{LEGACY_CODE}. It should be noted that legacy code is not a rigorously defined term with some developers simply defining it as any code without tests~\cite{feathers2004working}. For the purpose of this report the former definition of legacy code is utilised. 
 
-As legacy-code could be considerably old, it may not utilise modern features or practises of a language, resorting to workarounds and idioms that are deprecated. The developers working on legacy-code will not be well versed in the old idioms, as they have been trained on more modern approaches. When employing these new techniques a problem raises in mixing old and new which makes the code harder to maintain. All of these features of legacy code place barriers in the way of new developers trying to maintain, alter and improve the system. 
+% are differing definitions of legacy code 
+
+As legacy-code could be considerably old, it may not utilise modern features or practises of a language, resorting to workarounds and idioms that are depreciated. The developers working on legacy-code will not be well versed in the old idioms, as they have been trained on more modern approaches. When employing these new techniques a problem raises in mixing old and new which makes the code harder to maintain. All of these features of legacy code place barriers in the way of new developers trying to maintain, alter and improve the system. 
+
+\begin{figure}[H]
+    \centering
+
+    \begin{subfigure}[h]{\textwidth}
+        
+        \begin{minted}{C++}
+            for(int i =0; i < array.size(); i++){...}
+        \end{minted}
+        \caption{Before: Using standard for-loop}
+        \vspace{0.2cm}
+        \label{fig:for-arr-before}
+    \end{subfigure}
+    
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                    for(int i : array){...}
+        \end{minted}
+        \caption{After: Using Ranged-for loop}
+        \label{fig:for-arr-after}
+    \end{subfigure}
+
+    \caption{Example of a rejuvenation where a for-loop is rejuvenated to use a newer for-loop language construct}
+    \label{fig:example-rejuv}
+\end{figure}
 
 % why legacy code makes it hard to maintain alter and improve
     % mixing coding practises and style
@@ -55,13 +83,42 @@ As legacy-code could be considerably old, it may not utilise modern features or 
     % higher levels of abstraction make information more explicit, so easier to understand the intent of the code
     % Can offer additional information to the compiler to enable optimisation that may be obscured in a more complex idiom.
     
-Source code rejuvenation~\cite{STROUSTRUP_REJUV} aims to remove these barriers by utilising modern language features as well as new standard library additions in place of workarounds, and idioms that do not express the intent of the underlying code in a satisfactory way. The use of modern features over old ones also allows for the improved safety of code as many old techniques do not treat security as a priority. Another advantage is that newer language features introduce higher levels of abstraction which can make information more explicit to other programmers and the compiler. This allows for the intent of the programmer to be more clearly stated instead of being hidden in an obtuse implementation. 
+Source code rejuvenation~\cite{STROUSTRUP_REJUV} aims to remove these barriers by utilising modern language features as well as new standard library additions in place of workarounds and idioms, Figure \ref{fig:example-rejuv}, that do not express the intent of the underlying code in a satisfactory way. The use of modern features introduces higher levels of abstraction which can make information more explicit to other programmers and the compiler. This allows for the intent of the programmer to be more clearly stated instead of being hidden in an obtuse implementation. 
 
-Manual rejuvenation of source code could be a way to handle old legacy code but as the task is difficult and error-prone as the repetitive nature of the task increases the chance of introducing mistakes it is not a suitable solution. So it is critical to automate this rejuvenation, to reduce the chance of error but to also allow the rejuvenation of code to scale to the size of legacy applications which could in hundreds of thousands of lines of code.
+Manual rejuvenation of source code could be a way to handle old legacy code but as the task is difficult and error-prone as the repetitive nature of the task increases the chance of introducing mistakes it is not a suitable solution. So it is critical to automate this rejuvenation, to reduce the chance of error but to also allow the rejuvenation of code to scale to the size of legacy applications, which could in hundreds of thousands of lines of code. The cost to businesses in terms of increased development time when making alterations to systems~\cite{LEGACY_MOD} and the restrictions on performance due to old code~\cite{HPC} makes source code rejuvenation a reasonable alternative to rewritting legacy applications.
+
+\subsection{Rejuvenation vs Refactoring}
 
 Source code rejuvenation is related to, but is a distinct field from, the more prevalent process of code restructuring known as refactoring~\cite{REFACTOR_BOOK}. Refactoring is defined as a process of improving the internal structure of the code without altering its external behaviour in the wider system. 
 
-The underlying difference separating rejuvenation from refactoring is that code rejuvenations are willing to alter the external behaviour in such a way to better express the intent of the programmer. The above statement can also be expressed as refactoring being directed at improving the structure of the code, while source code rejuvenation being directed at improving all aspects of the code through the use of newer language and library constructs. The improvements that could be introduced by new language features and standard library tools include using data structures that introducing bound checking and a standardised interface when utilising standard library data structures. The way the two techniques are deployed also differs as the source code rejuvenation is single transformation pass of existing source code, as shown in chapters \ref{chp:auto-tranform}, \ref{chp:loop-transform}, while refactoring is seen as an ongoing maintenance task.
+\begin{figure}[H]
+    
+    \begin{subfigure}[h]{\textwidth}
+        \begin{minted}{C++}
+        int temp[] = {1,2,3,4,5,6,7,8};
+        vector<int> vec(temp, sizeof(temp) / sizeof(int));
+        \end{minted}
+        \caption{Before rejuvenation the vector has a complex initialisation}
+        \vspace{0.2cm}
+        \label{fig:exp-intent-before}
+    \end{subfigure}
+    
+    \begin{subfigure}[h]{\textwidth}
+        \centering
+        \begin{minted}{C++}
+                vector<int> vec = {1,2,3,4,5,6,7,8};
+        \end{minted}
+        \caption{After rejuvenation more direct initialisation}
+        \label{fig:exp-intent-after}
+    \end{subfigure}
+
+    \caption{Example shows how rejuvenation can alter the code completely while also getting closer to the programmers intent of initialising the vector.}
+    \label{fig:exp-intent}
+\end{figure}
+
+The underlying difference separating rejuvenation from refactoring is that code rejuvenations are willing to alter the external behaviour in such a way to better express the intent of the programmer, Figure \ref{fig:exp-intent}. The above statement can also be expressed as refactoring being directed at improving the structure of the code, while source code rejuvenation being directed at improving all aspects of the code through the use of newer language and library constructs. The improvements that could be introduced by new language features and standard library tools include using data structures that introducing bound checking and a standardised interface when utilising standard library data structures. The way the two techniques are deployed also differs as the source code rejuvenation is single transformation pass of existing source code, as shown in chapters \ref{chp:auto-tranform}, \ref{chp:loop-transform}, while refactoring is seen as an ongoing maintenance task.
+
+\subsection{Project Focus}
 
 This project has chosen to focus on building automated source code rejuvenations for the C++ language, as it has been established for many years, with its first standard being released in 1998~\cite{ISO:1998:IIP}. The reason C++ makes an appealing target for source code rejuvenations is that since the first C++ standard there has been many further standards which have introduced many language features as well as extending the languages standards library. These additional features are introduced in many cases to cover gaps in the languages which have been previously filled by workarounds and other programming idioms, which makes these new features an appealing target for source code rejuvenations tools, example are given in Section \ref{sec:cpp-background}. Another factor in selecting C++ is that due to its long-standing popularity there is a large number of legacy applications that could benefit from source code rejuvenations as many are created before the advent of the more recent C++ standards. 
 
@@ -94,9 +151,9 @@ This project has chosen to focus on building automated source code rejuvenations
 
 
 \section{Aims} %research objectives 
-The central aim of the project is to produce several source code rejuvenations to assess different aspects of their creation and use. The first aspect of interest is the difficulty of implementing the transformations with existing tools currently available. Another aspect of importance, after implementation, is the effectiveness of the transformations in their desired area. This entails examining how well the source code rejuvenation can identify the areas for possible rejuvenation in real-world code. A related aspect of effectiveness is ensuring that the code produced by transformation is valid and matches the implied intent of the programmer. The final aspect the project aims to investigate is the perceived usefulness of the source code rejuvenations on their target area, this includes if they can actually improve maintainability and readability of the code base they are transforming.
+The central aim of the project is to produce several source code rejuvenations to assess different aspects of their creation and use. The first aspect of interest is the difficulty of implementing the transformations with existing tools currently available. Another aspect of importance, after implementation, is the effectiveness of the transformations in their desired area. This entails examining how well the source code rejuvenation can identify the areas for possible rejuvenation in real-world code. A related aspect of effectiveness is ensuring that the code produced by the transformation is valid and matches the implied intent of the programmer. The final aspect the project aims to investigate is the perceived usefulness of the source code rejuvenations on their target area, this includes if they can actually improve maintainability and readability of the code base they are transforming.
 
-Apart from the experience and insight gained from the development of the source code rejuvenations, the other central way the project aims to assess the aspects mentioned above is the through evaluating the source code rejuvenations on real-world code examples. This evaluation is critical to assess the usefulness and effectiveness of the transformations. For example, if production code does not utilise the patterns the transformations are looking for then the actual use to developers is limited.
+Apart from the experience and insight gained from the development of the source code rejuvenations, the other central way the project aims to assess the aspects mentioned above is through evaluating the source code rejuvenations on real-world code examples. This evaluation is critical to assess the usefulness and effectiveness of the transformations. For example, if production code does not utilise the patterns the transformations are looking for then the actual use to developers is limited.
 
 % assess the difficulty in implementing the transforms, the effectiveness of the transforms at what they do, and the overall usefulness, evaluation of the transformations 
 
@@ -113,12 +170,12 @@ In summary, the following items where achieved:
     \item Implemented a source code rejuvenation tool, \textit{auto-rejuvenation}, utilising the Rose compiler framework, that is focused on introducing the C++ concept of type inference through the use of \texttt{auto} keyword in the declaration of variables.
     \item Implemented a second source code rejuvenation, \textit{for-loop-rejuvenation}, centred around finding instances of standard  C++ for-loops that would benefit from using the C++11 ranged-for construct. 
     \item Evaluated the two source code rejuvenations on real-world code examples including benchmarks found in the SPEC CPU benchmarks, and examples extracted from Github~\cite{GITHUB}. 
-    \item The two source code rejuvenations implemented were contrasted with existing tools created in the clang compiler framework that focuses on transforming similar targets to the source code rejuvenations.  
+    \item The two source code rejuvenations implemented were contrasted with existing tools created in the clang compiler framework that focus on transforming similar targets to the source code rejuvenations.  
 \end{itemize}
 
-\section{Outcomes: Summary of result}
+\section{Outcomes: Summary of results}
 
-The project produced two independent and standalone rejuvenation tools that can be given source code files and then automatically searches through the files and applies there transformations where appropriate. Upon evaluating the source code rejuvenations, \textit{auto-rejuvenation} and \textit{for-loop-rejuvenation} it was seen from the results that they both experienced significant drawbacks.
+The project produced two independent and standalone rejuvenation tools that can be supplied source code files and then automatically search through the files and apply their transformations where appropriate. Upon evaluating the source code rejuvenations, \textit{auto-rejuvenation} and \textit{for-loop-rejuvenation} it was seen from the results that they both experienced significant drawbacks.
 
 The \textit{auto-rejuvenation} transformation, suffered from more conceptual problems than \textit{for-loop-rejuvenation} in that there were many places where the transformation was applied where it did not benefit the readability of the code and actually lead to worse maintainability. It can also be noted that even though \textit{auto-rejuvenation} was overreaching in applying its transformation the clang-tidy tool suffered the opposite problem in being too restrictive, to where its transformation hit rate was extremely low.  
 
@@ -147,12 +204,12 @@ The remainder of the report is structured as follows:
 \begin{description}
     \item [Chapter 2: Background \& related work] provides an overview of the information required to understand the transformations discussed in later chapters. It outlines an overview of the compilation process showing how source-to-source compilers differ from standard approaches. The Rose compiler framework, utilised for the source to source transformation, is discussed along with why it was chosen over other tools. The end of this chapter looks at existing tools in the area of source code rejuvenation, as well as refactoring tools and how they relate to source code rejuvenation.
     
-    \item [Chapter 3: Transform to Utilise Automated Type Inference] discusses the first source-code transformation of the report, \textit{auto-rejuvenation}. The chapter explains what type inference is and how it can be utilised to rejuvenate source-code, as well as conceptual challenges faced in designing the transformation approach. Finally, implementation details are gives followed by an evaluation of the tool on real-world code with a comparison made to the \textit{modernise-use-auto} transformation created using the clang framework. 
+    \item [Chapter 3: Transform to Utilise Automated Type Inference] discusses the first \\source-code transformation of the report, \textit{auto-rejuvenation}. The chapter explains what type inference is and how it can be utilised to rejuvenate source-code, as well as conceptual challenges faced in designing the transformation approach. Finally, implementation details are gives followed by an evaluation of the tool on real-world code with a comparison made to the \textit{modernise-use-auto} transformation created using the clang framework. 
     
     \item [Chapter 4: Loop Transform: For Loop to Ranged For Loop] introduces the second source-code rejuvenation, \textit{for-loop-rejuvenation}. An explanation of ranged-for loops and how they differ from traditional C++ for-loops is given. Next is a breakdown of the scope of the transformation focusing on the types of traditional for-loop the rejuvenation can target. A more in-depth look at the implementation details is given next, showing the transformations performed on the AST to achieve the rejuvenation. An evaluation of \textit{for-loop-rejuvenation} is used to conclude the chapter, running the rejuvenation on a set of real work benchmarks extracted from the SPEC CPU 2017 benchmark. The results are then contrasted with another clang-tidy modernisation transform, \textit{modernize-loop-convert}. 
     
     % The areas where effectiveness of the transform could be improved is given with examples.
-    \item [Chapter 5: Conclusion \& Further work] 
+    \item [Chapter 5: Conclusion \& Further work] summaries the evaluation of the source code rejuvenation of the previous chapters, as well as a wider look at the lessons learned when designing source code rejuvenations. The chapter also discusses extensions to the source code rejuvenations implement in the report as well as a more ambitious rejuvenation which could be implemented. Finally, a look at how a different approach from existing tools could help develop and implement rejuvenation tools moving forward.
     
 \end{description}
  
@@ -162,7 +219,7 @@ The remainder of the report is structured as follows:
 \chapter{Background \& Related Work}
 
 %intro the 
-This chapter aims to give the reader the required foundational knowledge to understand the work presented in the report. C++ versions are briefly explained with relation to the features utilised in the transforms, noting where the features were first introduced. An overview of the compilation process, stating where it differs from a typical compilation process. The compiler framework Rose is discussed and contrasted with the Clang/LLVM compiler framework, with reflection on why Rose was chosen over Clang. Finally, related work in the area of rejuvenation and refactoring is presented. 
+This chapter aims to give the reader the required foundational knowledge to understand the work presented in the report. C++ versions are briefly explained with relation to the features utilised in the transforms, noting where the features were first introduced. An overview of the compilation process is given stating where it differs from a typical compilation process. The Rose compiler framework is discussed and contrasted with the Clang/LLVM compiler framework, with reflection on why Rose was chosen over Clang. Finally, related work in the area of rejuvenation and refactoring is presented. 
 
 \section{C++: An Evolving Language}\label{sec:cpp-background}
 C++ has been in existence since 1985 with the first standard being introduced in 1998 referred to as C++98, with each of following standards being released after; C++03, C++11, C++14, C++17 \cite{CPP_VER}. Each version would bring new features to C++, ranging in size from smaller changes as the introduction of new keywords like \textit{final} or wide spanning changes such as "Template programming" \cite{TEMP_CPP}, the C++ approach to generic programming, being implemented. Some of the language features added were to remove the reliance on workarounds \cite{WORKARROUND_CPP} created by developers to overcome the limitations of the language. For example, the initialiser list functionality, Figure \ref{fig:vec-list}, for defining vectors was only added in C++11, previously it was only available to basic array types. 
@@ -180,13 +237,13 @@ C++ has been in existence since 1985 with the first standard being introduced in
     
     \begin{subfigure}[b]{0.5\textwidth}
         \begin{minted}{C++}
-        vector<int> b = {1,2,3,4,5};
+        std::vector<int> b = {1,2,3,4,5};
         \end{minted}
-        \caption{List Initailisation of vector, added in C++11}
+        \caption{List Initailisation of a vector data structure}
         \label{fig:vec-list-b}
     \end{subfigure}
     
-    \caption{List initialisation}
+    \caption{List initialisation, previously only possible for arrays was added for containers like \texttt{std::vector} in C++11.}
     \label{fig:vec-list}
 \end{figure}
 
@@ -198,7 +255,7 @@ The aforementioned feature is a prime example of an area where rejuvenation can 
 
 \section{Compile Process and Abstract Syntax Trees}
 % compile process stages lexing, parsing, ast, semantic analyser, IR/AST generator
-A critical requirement of the project was processing the source code into a form where the rejuvenations could be applied. The resulting source code of the transformations was also required to resembled the original input source code, excluding areas affected by the transformation. Standard Compilers such as the GNU Compiler Collection (GCC) \cite{GCC} do not offer an accessible way to perform such transforms, while also generating source code as output. This is due to the compile process being designed to generate machine code as shown in Figure \ref{fig:comp_proc}.
+A critical requirement of the project was processing the source code into a form where the rejuvenations could be applied. The resulting source code of the transformations was also required to resembled the original input source code, excluding areas affected by the transformation. Standard Compilers such as the GNU Compiler Collection (GCC) \cite{GCC} do not offer an accessible way to perform such transforms, while also generating source code as output. This is due to the compilation process being designed to generate machine code as shown in Figure \ref{fig:comp_proc}.
 
 \begin{figure}[!h]
     \centering
@@ -210,7 +267,7 @@ A critical requirement of the project was processing the source code into a form
 % has most info flexible for transformation of the output of any stage  
 % explain every step
 % An appropriate representation of the source code is required to perform the transformations.
-The source code takes many different forms as is it passed through the compile process shown above. Starting with text, then to a stream of tokens followed by a parse tree then a detailed abstract syntax tree, and finally machine code. 
+The source code takes many different forms as is it passed through the compilation process shown above. Starting with text, then to a stream of tokens followed by a parse tree then a detailed abstract syntax tree, and finally machine code. 
 
 \begin{figure}[H]
     \begin{subfigure}[b]{0.5\textwidth}
@@ -1458,7 +1515,7 @@ Benchmark Test & File Name & \# of Lines & \# of for loops found & \# of trans r
     %   array as variable is passed through a function.
 
 % possible extensions - some what interesting
-    % smarter types extraction for loop instead of always utilising auto
+%     % smarter types extraction for loop instead of always utilising auto
 
 \chapter{Conclusion \& Further work}
 % intro, what this chapter will contain 
@@ -1476,18 +1533,18 @@ The first Source code rejuvenation featured in the report, \textit{auto-rejuvena
     \begin{subfigure}[h]{\textwidth}
         \centering
         \begin{minted}{C++}
-            Counter maxNumber =  getIntegerCounter();
+            Counter maxNumber = getIntegerCounter();
         \end{minted}
-        \caption{Components of C++ for loop}
+        \caption{Before type inference}
         \label{fig:type-context-before}
         \vspace{0.40cm}
     \end{subfigure}
     
     \begin{subfigure}[h]{\textwidth}
         \begin{minted}{C++}
-            auto maxNumber =  getIntegerCounter();
+            auto maxNumber = getIntegerCounter();
         \end{minted}
-        \caption{Example of C++ for loop}
+        \caption{After type inference }
         \centering
         \label{fig:type-context-after}
     \end{subfigure}
@@ -1542,7 +1599,7 @@ The number of possible rejuvenations even within the C++ language is much larger
                     };
                     
                     Class List{
-                        void push_back(int);
+                        void push_back(void*);
                         void pop_front();
                             ...
                    }
