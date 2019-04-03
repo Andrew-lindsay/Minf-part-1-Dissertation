@@ -30,7 +30,11 @@ This report focuses on two areas of rejuvenation, the promotion of type inferenc
 \maketitle
 
 \section*{Acknowledgements}
-Acknowledgements go here. 
+Firstly, I would like to thank my supervisor Bj\"{o}rn Franke, for all his guidance and support throughout this project. His willingness to help and approach-ability has been indispensable. 
+
+I would also like to thank my flatmates who were always there to remind me to take a break and relax, thanks guys.
+
+Finally, I would like to thank my mother whose love and support, at every stage, has enabled me to make it this far, thank you.  
 
 \tableofcontents
 
@@ -43,7 +47,7 @@ Acknowledgements go here.
 % \section{What is source code rejuvenation ?}
 
 %  add metric about amount of legacy code (hard to find)
-Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write, and which has not been actively developed for some time. This code could be many years old but still require maintenance as it is part of a larger system within a company. This is a common occurrence within the industry, and many developers define this type of code as legacy code~\cite{LEGACY_CODE}. It should be noted that legacy code is not a rigorously defined term with some developers simply defining it as any code without tests~\cite{feathers2004working}. For the purpose of this report the former definition of legacy code is utilised. 
+Developers throughout their careers will be faced with situations where they inherit or have to work on code they did not write, and which has not been actively developed for some time. This code could be many years old but still require maintenance as it is part of a larger system within a company. This is a common occurrence within the industry, and many developers define this type of code as legacy code~\cite{LEGACY_CODE}. It should be noted that legacy code is not a rigorously defined term with some developers simply defining it as any code without tests~\cite{feathers2004working}. For the purpose of this report the former definition of legacy code is used. 
 
 % are differing definitions of legacy code 
 
@@ -121,7 +125,7 @@ The underlying difference separating rejuvenation from refactoring is that code 
 
 \subsection{Project Focus}
 
-This project has chosen to focus on building automated source code rejuvenations for the C++ language, as it has been established for many years, with its first standard being released in 1998~\cite{ISO:1998:IIP}. The reason C++ makes an appealing target for source code rejuvenations is that since the first C++ standard there has been many further standards which have introduced many language features as well as extending the languages standards library. These additional features are introduced in many cases to cover gaps in the languages which have been previously filled by workarounds and other programming idioms, which makes these new features an appealing target for source code rejuvenations tools, example are given in Section \ref{sec:cpp-background}. Another factor in selecting C++ is that due to its long-standing popularity there is a large number of legacy applications that could benefit from source code rejuvenations as many are created before the advent of the more recent C++ standards. 
+This project has chosen to focus on building automated source code rejuvenations for the C++ language, as it has been established for many years, with its first standard being released in 1998~\cite{ISO:1998:IIP}. The reason C++ makes an appealing target for source code rejuvenations is that since the first C++ standard there has been many further standards which have introduced many language features as well as extending the languages standards library. These additional features are introduced in many cases to cover gaps in the languages which have been previously filled by workarounds and other programming idioms, which makes these new features an appealing target for source code rejuvenations tools, example are given in Section \ref{sec:cpp-background}. Another factor in selecting C++ is that due to its long-standing popularity there is a large number of legacy applications that could benefit from source code rejuvenation as many are created before the advent of the more recent C++ standards. 
 
 % project focus' on utilising C++
 % been around for many years 
@@ -376,8 +380,8 @@ Clang was not chosen for this project for a number of reasons, a summary of thes
              Rewrites done by traversing AST      & AST matcher functions               \\ 
              (Visitor Pattern)                    & (pattern matching)                  \\ \hline
              No attempts at modernisation         & Clang-Tidy has modernisation checks \\ \hline
-             Good Documentation                   & Better Documentation                \\ \hline
-             Build standalone tools easily        & Tools Require work to build/maintain\\ \hline
+             Good documentation                   & Better documentation                \\ \hline
+             Build standalone tools easily        & Tools require work to build/maintain\\ \hline
         \end{tabular}
         \caption{Comparison between Rose and Clang }
         \label{tab:cmp-rose-clang}
@@ -1223,7 +1227,46 @@ The loop body requires changes to all old uses of the \texttt{init-expression} v
 
 \section{Implementation}
 
-The main entry point for the for-loop-rejuvenation is the traversal \texttt{ForLoopTraversal} which visits every for loop node, SgForStatement, in the source code file, checking if they match any of the three for loop types specified in Section~\ref{sec:forLoop-scope-trans}.
+% main traversal
+
+% header checking
+
+% safe to transform checks
+
+% transform loop body
+
+The main entry point for the \textit{for-loop-rejuvenation} is the traversal \texttt{ForLoopTraversal}, Figure~\ref{fig:pse-code-main-trav}, which visits every for-loop node, SgForStatement, in the source code file, checking if they match any of the three for loop types specified in Section~\ref{sec:forLoop-scope-trans}.
+
+\begin{figure}[H]
+    \centering
+    \begin{minted}{python}
+class ForLoopTraversal:
+def visit(loopNode):
+    if( isIteratorLoop(loopNode) 
+        && safeIteratorForTransform(loopNode)):
+        range_for = 
+            BuildRangedBasedFor(containerName,iteratorName)
+        IteratorTransform.traverse(loopNode.get_body())
+        replaceStatement(loopNode, rangeFor)
+    else if( isArraySizeLoop(loopNode) 
+        && safeIndexForTransform(loopNode) ):
+        range_for = 
+            BuildRangedBasedFor(containerName, indexName)
+        IndexUseTransform.traverse(loopNode.get_body())
+        replaceStatement(loopNode, rangeFor)
+    else if( isBasicArrayLoop(loopNode) 
+        && safeIndexForTransform(loopNode)):
+            # same as previous case
+    \end{minted}
+    \caption{Pseudocode of main traversal}
+    \label{fig:pse-code-main-trav}
+\end{figure}
+
+
+
+\subsection{Loop header checks}
+
+The main traversal first checks if the loop is of iterator type, Figure \ref{fig:code-for-iter}, by checking the initialise statement, comparison expression and increment expression. If the initialisation check, \texttt{ hasValidInitializer}, finds a valid initialiser with an object making a call to \texttt{begin()}, the function extracts the names of the object and the variable being assigned, setting the container name and iterator name, respectively. The names of the container and the iterator are then used in the further checks of comparison and the iterator expressions. The check of the comparison expression, \texttt{hasValidComparitor}, required handling containers, e.g List, Vector, utilising overloaded operators, so both overloaded and non-overload not equals operators had to be checked, Figure \ref{fig:comp-operators}. The increment check also had to account for the overloading of the \texttt{++} operator on the iterator extracted from the initialise statement. 
 
 \begin{figure}[H]
     \centering
@@ -1246,21 +1289,15 @@ The main entry point for the for-loop-rejuvenation is the traversal \texttt{ForL
     \label{fig:comp-operators}
 \end{figure}
 
-
-\subsection{Loop header checks}
-
-The main traversal first checks if the loop is of iterator type, Figure \ref{fig:code-for-iter}, by checking the initialise statement, comparison expression and increment expression. If the Initialisation check, \texttt{ hasValidInitializer}, finds a valid initialiser with an object making a call to \texttt{begin()}, the function extracts the name of the object and variable being assigned, setting the container name and iterator name, respectively. The names of the container and the iterator are then used in the further checks of comparison and the iterator expressions. The check of the comparison expression, \texttt{hasValidComparitor}, required handling containers, e.g List, Vector, utilising overloaded operators, so both overloaded and non-overload not equals operators had to be checked, Figure \ref{fig:comp-operators}. The increment check also had to account for the overloading of the \texttt{++} operator on the iterator extracted from the initialise statement. 
-
-
 % checks on loop headers 2 
-The array-like container case and the statically allocated array case can share the same checks for a valid initialiser, \texttt{hasValidIndexInitialiser(..)}, and increment expression, \texttt{hasVaildIncrement}. The valid increment check can be the same check utilised by iterator for loop case as well as it handles overloaded and standard \texttt{++} operators. The shared check, \texttt{hasValidIndexInitialiser}, which ensures that the initial value of the indexing variable is 0 ,Figure \ref{fig:code-for-container},  does not restrict matching to standard integer zeros, it supports long integers, \texttt{0l, 0L}. The check also handles any implicit or explicit casting that can occur from the type utilised by the variable. The check returns false if the indexing variable is assigned any variation of a double value. This restriction is instated to simplify the process of extracting the value and comparing it to zero.
+The array-like container case and the statically allocated array case can share the same checks for a valid initialiser, \texttt{hasValidIndexInitialiser(..)}, and increment expression, \texttt{hasVaildIncrement}. The valid increment check can be the same check utilised by iterator for-loop case as it handles overloaded and standard \texttt{++} operators as well. The shared check, \texttt{hasValidIndexInitialiser}, which ensures that the initial value of the indexing variable is 0 ,Figure \ref{fig:code-for-container},  does not restrict matching to standard integer zeros, it supports long integers, \texttt{0ul, 0L}. The check also handles any implicit or explicit casting that can occur from the type utilised by the variable. The check returns false if the indexing variable is assigned any variation of a double value. This restriction is instated to simplify the process of extracting the value and comparing it to zero.
 
 
 The differences between the array-like container and the statically allocated array centre around the comparison check. For the array like container the check \texttt{hasVaild SizeComparitor(..)} , checks the index is compared against the container calling end, \texttt{COND.end()}. The decision was made to only support direct uses of the container, references to them are rejected, so only the dot notation for method calls is checked. Unlike the iterator case, the container is not present in the initialise statement, the first time it is seen in the array-like case is in the comparison expression. So it is here that the container is extracted to be utilised later in identifying the container in the loop body.
 
 \subsubsection{Locating the Array being indexed}
 
-The statically allocated array case required a unique approach to the comparison check, \texttt{hasVaildBasicComparator(..)}, as the index is compared to the size of the array before we have a reference to the container which is the focus of the for loop, Figure \ref{fig:code-for-stat}. To be able to check that the index is bounded by the size of the array, the array has to be known. So the hasVaildBasicComparator function utilises a new traversal class ValidArrayIndexTraversal to scan the loop's body to locate the container that is being indexed. The traversal does not aim to assess the safety of the transformation on the loop body, as this would overcomplicate the traversal. Not assessing the safety in ValidArrayIndexTraversal also increases reusability as same loop safety check traversal, \texttt{safeIndexForTransform(..)}, can be used by the statically allocated array and the array-like cases. 
+The statically allocated array case required a unique approach to the comparison check, \texttt{hasVaildBasicComparator(..)}, as the index is compared to the size of the array before we have a reference to the container which is the focus of the for-loop, Figure \ref{fig:code-for-stat}. To be able to check that the index is bounded by the size of the array, the array has to be known. So the hasVaildBasicComparator function utilises a new traversal class ValidArrayIndexTraversal to scan the loop's body to locate the container that is being indexed. The traversal does not aim to assess the safety of the transformation on the loop body, as this would overcomplicate the traversal. Not assessing the safety in ValidArrayIndexTraversal also increases reusability as same loop safety check traversal, \texttt{safeIndexForTransform(..)}, can be used by the statically allocated array and the array-like cases. 
 
 \begin{figure}[H]
     \begin{subfigure}[b]{0.6\textwidth}
@@ -1308,22 +1345,49 @@ The \texttt{ValidArrayIndexTraversal} traversal searches for all pointer array r
     \label{fig:list-init-var}
 \end{figure}
 
-The size of the array is found by examining the declaration of the array, a pointer to it is stored in the SgVarRefExp node. The declaration can take the forms shown in Figure \ref{fig:code-static-for-cm} as well as a list initialisation. So  can be extracted from the non-list initialisation declaration by accessing the type of the variable declaration, SgArrayType, then getting size value with the function, \texttt{arraytype->get\_index()}. To uncover the size of the list initialised array, the number of child nodes of the \texttt{SgExprListExp} needed to be retrieved, Figure \ref{fig:list-init}. 
+The size of the array is found by examining the declaration of the array, a pointer to it is stored in the SgVarRefExp node. The declaration can take the forms shown in Figure \ref{fig:code-static-for-cm} as well as a list initialisation. The size can be extracted from the non-list initialisation declaration by accessing the type of the variable declaration, SgArrayType, then getting size value with the function, \texttt{arraytype->get\_index()}. To uncover the size of the list initialised array, the number of child nodes of the \texttt{SgExprListExp} needed to be retrieved, Figure \ref{fig:list-init-var}. 
 
-After the container name and size have been extracted, the traversal continues searching all SgPtrArrRefExp, node and if another array with a different name meets the matching criteria the traversal set its \texttt{valid} field to false. So the \textit{hasVaildBasicComparitor} can check this field and return false once the traversal of the body end, stopping the transformation of that for-loop. If only a single array is found the validation of the comparison expression proceeds similarly to the array-like container check, ensuring that the value used in the comparison matches the actual array size from the traversal.  
+After the container name and size have been extracted, the traversal continues searching all SgPtrArrRefExp, node and if another array with a different name meets the matching criteria the traversal set its \texttt{valid} field to false. So the \textit{hasVaildBasicComparitor} can check this field and return false once the traversal of the loop body ends, stopping the transformation of that for-loop. If only a single array is found the validation of the comparison expression proceeds similarly to the array-like container check, ensuring that the value used in the comparison matches the actual array size from the traversal.  
 
 \subsection{Safe to transform checks}
 
 After the loop has matched to a supported loop type with the loop components being validated, the loop body needs to be confirmed safe to transform before proceeding. It was decided that to simplify the code and the transform's design, two separate traversals of the loop body would be utilised, one traversal for iterator loop type, \texttt{IteratorUseTraversal}, and another for array-like and statically allocated loop types, \texttt{IndexUseTraversal}. 
 
-The \texttt{IteratorUseTraversal} searches for every SgVarRefExp nodes seeing if the variable name matches either the name of the iterator variable or the container, handling them separately. As the transform is interested in where the variables are being used, the parent node of the SgVarRefExp node is extracted, \texttt{varRef->get\_parent()}. The only acceptable parent nodes for the iterator variable are SgPointerDerefExp for non-overloaded dereference, SgArrowExp for non-overloaded access to methods using arrow expression, and finally, SgDotExp nodes which represent function calls on the iterator as it is an object. As the SgDotExp node has the iterator name on the left-hand side of the operation the only allowed methods to be called are \textit{operator*} and \textit{operator$\rightarrow$} representing the overloaded versions of the previously mentions expression. The reasons for only accepting these nodes and overloaded operators were discussed in Section \ref{sec:safety-of-trans}. If a container variable is found in the loop's body, independent and is not a child of one of the mentioned parent nodes, the loop body is marked as unsafe to transform.
+\begin{figure}[H]
+    \centering
+    \begin{minted}{python}
+class IteratorUseTraversal:
+def visit(node):
+    if(isVarRef(node) && node->name() == iterator):
+        parentNode = node->get_parent()
+        if(isDotExp(parentNode)):
+            rhsFuncCall = isFunctionRefExp(parentNode)
+            if(rhsFuncCall->name() == "operator*" ||
+                    rhsFunCall->name() == "operator->"):
+                validToTransform = true 
+            else:
+                validToTransform = false
+        else if(isArrowExp(parentNode)):
+            validToTransform = true
+        else if(isPointerDeRefExp(parentNode):
+            validToTransform = true
+    else if(isVarRef(node) && node->name() == iterator):
+        validToTransform = false
+    \end{minted}
+    \caption{Pseudocode for checking the safety of the loop body of iterator loop type }
+    \label{fig:pse-code-safe-check-iter}
+\end{figure}
+
+
+The \texttt{IteratorUseTraversal}, Figure~\ref{fig:pse-code-safe-check-iter}, searches for every SgVarRefExp nodes seeing if the variable name matches either the name of the iterator variable or the container, handling them separately. As the transform is interested in where the variables are being used, the parent node of the SgVarRefExp node is extracted, \texttt{varRef-> get\_parent()}. The only acceptable parent nodes for the iterator variable are SgPointerDerefExp for non-overloaded dereference, SgArrowExp for non-overloaded access to methods using arrow expression, and finally, SgDotExp nodes which represent function calls on the iterator as it is an object. As the SgDotExp node has the iterator name on the left-hand side of the operation the only allowed methods to be called are \textit{operator*} and \textit{operator$\rightarrow$} representing the overloaded versions of the previously mentions expression. The reasons for only accepting these nodes and overloaded operators were discussed in Section \ref{sec:safety-of-trans}. If a container variable is found in the loop's body, independently and is not a child of one of the mentioned parent nodes, the loop body is marked as unsafe to transform.
 
 The \texttt{IndexUseTraversal} traversal similarly checks every SgVarRefExp node and extracts the parent node if the variable name matches the container or index. As this traversal handles both array-like and statically allocated arrays it needs to handle the overloaded operator, \textit{operator[]} and the \texttt{at(..)} method call as well as normal array access notation represented by the SgPntrArrRefExp node in the AST. The index's allowed parent nodes are SgExprListExp which represents the arguments to a function call and the previously mentioned SgPntrArrRefExp node for non-overload access. To check that the function call is to only the allowed operators, the parent of the argument list needs to be check, as it is the root of the function call, SgFunctionCallExp.
 
 % image of a function call  
 
 \subsection{Building ranged-based for statement}\label{sec:build-range-for}
-After the loop body has been confirmed to be safe the transformation of the for-loop can begin. To start with the transform creates a new ranged-for statement to replace the existing for statement. The function \textit{constructRangedBasedForLoop(..)} was created to build the ranged-for node, SgRangeBasedForStatement, requiring only the names of the container/array and the iterator/index. The function utilises the SageBuilder interface for constructing statements, the interface is used to build the variable declaration that will be the range-declaration, Figure \ref{fig:range-for-header-form}. The Figure \ref{fig:range-dec-var} shows the construction of the variable. The type is set to utilise \texttt{auto} type inference, as the extraction of type information from containers such as \texttt{vector<int>} is overly cumbersome as the template instantiated code in the AST does not make it simple. 
+
+After the loop body has been confirmed to be safe the transformation of the for-loop can begin. To start with the transform creates a new ranged-based for statement to replace the existing for statement. The function \textit{constructRangedBasedForLoop(..)} was created to build the ranged-based for node, SgRangeBasedForStatement, requiring only the names of the container/array and the iterator/index. The function utilises the SageBuilder interface for constructing statements, the interface is used to build the variable declaration that will be the range-declaration, Figure \ref{fig:range-for-header-form}. The Figure \ref{fig:range-dec-var} shows the construction of the variable. The type is set to utilise \texttt{auto} type inference, as the extraction of type information from containers such as \texttt{vector<int>} is overly cumbersome as the template instantiated code in the AST does not make it simple. 
 
 The final step in creating the range-based for are shown in Figure \ref{fig:range-based-for-stmt}. Many of the arguments for the build function can be omitted as we are not required to compile the code from the AST, as we unparse the AST to source-code. The only required statements are the range\_variable previously build and a declaration matching that of the container/array utilised called range\_var. The loop body is left empty as it will be replaced by the transformed loop body of the original for-loop.
 
@@ -1335,7 +1399,7 @@ The final step in creating the range-based for are shown in Figure \ref{fig:rang
             buildReferenceType(
                 buildTemplateType("auto"))); 
     \end{minted}
-    \caption{Building range-declaration variable}
+    \caption{Constructing range-declaration variable}
     \label{fig:range-dec-var}
 \end{figure}
 
@@ -1348,13 +1412,45 @@ SgRangeBasedForStatement* rangeFor =
                                     NULL, NULL, NULL, NULL,
                                     buildBasicBlock());    
     \end{minted}
-    \caption{Building Ranged-based For}
+    \caption{Constructing ranged-based for node}
     \label{fig:range-based-for-stmt}
 \end{figure}
 
 \subsection{Transformation of loop body}
 
-The transformation of the loop body is achieved by yet another traversal through the loop body. Two separate traversals exist, \texttt{IteratorUseTransform} for the iterator case, and \texttt{IndexUseTransform} for array-like and statically allocated cases. The decision to create a separate traversal for checking the safety of the loop body and transforming it was to simplify the traversal and to not prescribe too much functionality to a single traversal. If a single traversal was utilised it would require implementing a form of backtracking to undo changes when traversing the loop body or to copy the loop body's AST. Depending on the size of the loop body this could greatly impact performance and memory use. As the backtracking approach would increase the complexity of the traversals the two traversal approach was taken.
+\begin{figure}[H]
+    \centering
+    \begin{minted}{python}
+class IteratorUseTransform :
+def visit(node):
+    if(isVarRef(node) && node->name() == iterator):
+        iterRef = node
+        parentNode = node->get_parent()
+        if(isPointerDeRefExp(parentNode)): ...
+        else if(isArrowExp(parentNode)): ...
+        else if(isDotExp(parentNode)): # overloaded operators
+            memberFunc = parentNode->get_rhs_operand()
+            if(memberFunc.get_name() == "operator*" ||
+                    memberFunc.get_name() == "operator->"):
+                funcCallExp = getRootFunCallExpression(parentNode)
+                if(memberFunc.get_name() == "operator->"):
+                    arrowExp = getParentArrowExp(funcExp)
+                    dotExp = buildDotExp(iteratorExp,
+                                arrowExp->get_rhs_operand())
+                    replaceExpressionCheck(arrowExp, iterRef)
+                else:
+                    replaceExpressionCheck(funcCallExp, iterRef)
+    \end{minted}
+    \caption{Pseudocode for transforming the loop body of the iterator loop type }
+    \label{fig:pse-code-trans-iter}
+\end{figure}
+
+The transformation of the loop body is achieved by yet another traversal through the loop body. Two separate traversals exist, \texttt{IteratorUseTransform} for the iterator case, and \texttt{IndexUseTransform} for array-like and statically allocated cases. The decision to create a separate traversal for checking the safety of the loop body and transforming it was to simplify the traversals and to not prescribe too much functionality to a single one. If a single traversal was utilised it would require implementing a form of backtracking to undo changes when traversing the loop body or to copy the loop body's AST. Depending on the size of the loop body this could greatly impact performance and memory use. As the backtracking approach would increase the complexity of the traversals, having distinct traversals was the approach taken in when implement the transform.
+
+
+
+
+The \texttt{IteratorUseTransform} traversal, Figure~\ref{fig:pse-code-trans-iter}, searches the loop body for all variable use nodes, SgVarRefExp, where the variable name matches the iterator name. Similarly to the safety traversal the parent node of the SgVarRefExp node is extracted and checked  if the node is of a certain type, e.g SgDotExp, SgArrowExp or SgPointerDerefExp. As most iterators overload their uses of $\rightarrow$, and $*$, the following discussion will focus on those cases, the non-overloaded cases are also handled in the traversal due to containers like \texttt{std::array} which do not overload them. If the parent node is a SgDotExp then a function call is present and due to the safety check, we can assume it is either calling \textit{operator*} or \textit{operator$\rightarrow$}. Figure~\ref{fig:iter-deref-use-trans} shows the transformation that takes place when the call is to \textit{operator*}. The AST need to be traversed upwards until the root of the function call expression, SgFunctionCallExp, is reached where it, along with its subtree, is replaced by the SgVarRefExp node of the range-declaration statement, \texttt{it\_name}, Figure~\ref{fig:iter-AST-Trans-deref-after}. 
 
 \begin{figure}[H]
     \begin{subfigure}[b]{0.5\textwidth}
@@ -1375,7 +1471,10 @@ The transformation of the loop body is achieved by yet another traversal through
     \label{fig:iter-deref-use-trans}
 \end{figure}
 
-The \texttt{IteratorUseTransform} traversal searches the loop body for all variable use nodes, SgVarRefExp, where the variable name matches the iterator name. Similarly to the safety traversal the parent node of the SgVarRefExp node is extracted and checked the node is of a certain type, e.g SgDotExp, SgArrowExp or SgPointerDerefExp. As most iterators overload their uses of $\rightarrow$, and $*$, the following discussion will focus on those cases, the non-overloaded cases are also handled in the traversal due to containers like \texttt{std::array} which do not overload them. If the parent node is a SgDotExp then a function call is present and from the safety check, we can assume it is either calling \textit{operator*} or \textit{operator$\rightarrow$}. Figure \ref{fig:iter-deref-use-trans} shows the transformation that takes place when the call is to \textit{operator*}. The AST need to be traversed upwards until the root of the function call expression, SgFunctionCallExp, is reached where it along with it's sub-tree is replaced by the SgVarRefExp node of the range-declaration statement, \texttt{it\_name}, Figure \ref{fig:iter-AST-Trans-deref-after}. 
+
+If the function call expression is to \textit{operator$\rightarrow$} then a more complex replacement is required as it features an associated function call after the arrow notation, Figure \ref{fig:iter-arrow-use-trans}. After the loop header has been altered the elements can be directly accessed, so the arrow expression has to be replaced by the dot expression, Figure \ref{fig:iter-AST-Trans-arrow-after}. 
+
+The traversal \texttt{IndexUseTransform} for array-like and statically allocated cases, follows a similar process to the \texttt{IteratorUseTransform} traversal. The focus of this traversal is on transforming the code shown in Figure \ref{fig:before-tran-idx}, the traversal searches the loop body for all instances of variable use nodes names that match the array/container specified in the loop header checks. The transform then checks that the index is the only argument to the overloaded, \texttt{operator[]}, the \texttt{at(..)} or non-overloaded \texttt{[]} for statically allocated array. Upon passing the final check the entire array access expression  is replaced using the function \texttt{replaceExpressionCheck(arrAccess, buildVarRefExp(idx\_name)} provided by SageInterface.
 
 \begin{figure}[H]
     \begin{subfigure}[b]{0.5\textwidth}
@@ -1396,11 +1495,8 @@ The \texttt{IteratorUseTransform} traversal searches the loop body for all varia
     \label{fig:iter-arrow-use-trans}
 \end{figure}
 
-If the function call expression is to \textit{operator$\rightarrow$} then a more complex replacement is required as it features an associated function call after the arrow notation, Figure \ref{fig:iter-arrow-use-trans}. After the loop header has been altered the elements can be directly accessed, so the arrow expression has to be replaced by the dot expression, Figure \ref{fig:iter-AST-Trans-arrow-after}. 
 
-The traversal \texttt{IndexUseTransform} for array-like and statically allocated cases, follows a similar process to the \texttt{IteratorUseTransform} traversal. The focus of this traversal is on transforming the code shown in Figure \ref{fig:before-tran-idx}, the traversal searches the loop body for all instances of variable use nodes names that match the array/container specified in the loop header checks. The transform then checks that the index is the only argument to the overloaded, \texttt{operator[]}, the \texttt{at(..)} or non-overloaded \texttt{[]} for statically allocated array. Upon passing the final check the entire array access expression  is replaced using the function \texttt{replaceExpressionCheck(arrAccess, buildVarRefExp(idx\_name)} provided by SageInterface.
-
-The final stage of the transformation, after transforming the loop body, is to assembly the range-for node that will replace the for loop node, SgForStatement. Figure \ref{fig:replacing-for-loop-node} shows the process of the replacement, from the creation of the ranged-for node to the setting of its loop body to the transformed body of the original for-loop. After this process has completed the transformation exits and the newly transformed AST is passed to the Rose framework backend to be un-parsed back into source-code.
+The final stage of the transformation, after transforming the loop body, is to assembly the range-based for node that will replace the for-loop node, SgForStatement. Figure \ref{fig:replacing-for-loop-node} shows the process of the replacement, from the creation of the ranged-for node to the setting of its loop body to the transformed body of the original for-loop. After this process has completed the transformation exits and the newly transformed AST is passed to the Rose framework backend to be un-parsed back into source-code.
 % add AST before and after images would be the most useful mirrors the 
 
 \begin{figure}[H]
@@ -1443,14 +1539,10 @@ The \textit{for-loop-rejuvenation} defined in the previous sections will be eval
 
 As previous mentioned in Section \ref{sec:cmp-auto-reju-mod-auto} and related work Section \ref{sec:rw-clang-tidy}, Clang-tidy features a set of modernize checks. The most relevant for comparing to the \textit{for-loop-rejuvenation} is the the \textit{modernize-convert-loop} \cite{FOR_CONVERT}, previously mention in Section \ref{sec:rw-clang-tidy}. As the for loop types targeted by \textit{for-loop-rejuvenation}, Section \ref{sec:forLoop-scope-trans}, were based on those defined by the modernize-loop-convert check, the comparison between the tools is made easier. Both transformations handle loops over statically allocated arrays, containers using iterators and array-like containers using \texttt{at()} or \texttt{[]}. The transforms differ though in how they assess the safety of a transformation and how open or restrictive they are in allowing for-loops into each category. 
 
-The \textit{modernize-loop-convert} implements a set of confidence levels, risky, reasonable and safe, which dictate if the loop body is safe enough to allow for the transformation of the loop. The risky confidence setting allows for loops to be transformed where methods of the container are called in the loop body, reasonable confidence allows the conversion of those containers which make calls to new \texttt{end()} or \texttt{size()}, similarly to the case shown in Figure \ref{fig:code-for-container}. Finally, the safe confidence level allows only the for-loops that do not have criteria that would place them in the other two levels.
-
-The testing of \textit{for-loop-rejuvenation} and \textit{modernise-loop-convert} was conducted on a set of real-world code sampled from existing SPEC 2017 CPU benchmarks. All the files utilised were designated pure C++ and were taken from 541.leela\_r~\cite{SPEC_LEELA}, 5531.deepsjeng\_r~\cite{SPEC_DEEPSJENG}, 523.xalancbmk\_r~\cite{SPEC_XALANCBMK} and 510.parest\_r~\cite{SPEC_PAREST} benchmarks. The results from the testing are displayed in Table~\ref{tab:for-tool-benchmark}. The columns denoting the number of converted for loops shows that both transforms have a low hit rate at transforming for-loops. This in no ways suggests the tools are defective or wrong, only that they are limited by the fact that most for-loops do not fit the template of ranged-based for-loops, at least not without completely changing the intended purpose of the loop. However, the test data does show that the impact the \textit{for-loop-rejuvenation} can have, in its current form, is limited as it may be too restrictive in selecting for-loops for transformation.
-
-\begin{table}[H]
+\begin{table}[h]
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
-Benchmark & File Name & Lines & \begin{tabular}[c]{@{}l@{}}for-loops\\ found\end{tabular} & \begin{tabular}[c]{@{}l@{}}\# of trans \\ Rose-tool\end{tabular} & \begin{tabular}[c]{@{}l@{}}\# of trans \\ Clang-tidy\end{tabular} \\ \hline
+Benchmark & File Name & Lines & \begin{tabular}[c]{@{}l@{}}For-loops\\ found\end{tabular} & \begin{tabular}[c]{@{}l@{}}\# of trans \\ Rose-tool\end{tabular} & \begin{tabular}[c]{@{}l@{}}\# of trans \\ Clang-tidy\end{tabular} \\ \hline
 leela\_r & GTP & 502 & 6 & 1 & 1 \\ \hline
  & FastState & 479 & 21 & 0 & 0 \\ \hline
  & UCTSearch & 469 & 0 & 0 & 0 \\ \hline
@@ -1473,7 +1565,7 @@ xalancbmk\_r & TraverseSchema & 9060 & 39 & 0 & 0 \\ \hline
  & XTemplateSerializer & 2383 & 43 & 0 & 0 \\ \hline
  & SchemaValidator & 2195 & 16 & 0 & 0 \\ \hline
 %  & WFXMLScanner & 2150 & 5 & 0 & 0 \\ \hline
-parest\_r & auto\_derivative\_function & 343 & 26 & 0 & 0 \\ \hline
+parest\_r & auto\_derivative\_fun.. & 343 & 26 & 0 & 0 \\ \hline
  & convergence\_table & 223 & 8 & 0 & 0 \\ \hline
  & flow\_function & 764 & 50 & 6 & 5 \\ \hline
  & function & 503 & 14 & 0 & 0 \\ \hline
@@ -1481,10 +1573,16 @@ parest\_r & auto\_derivative\_function & 343 & 26 & 0 & 0 \\ \hline
  & memory\_consumption & 33 & 1 & 1 & 0 \\ \hline
  & parameter\_handler & 1815 & 32 & 2 & 3 \\ \hline
  & parsed\_function & 145 & 2 & 1 & 1 \\ \hline
+ Totals & 29 & 44058 & 447 & 11 & 12 \\ \hline
 \end{tabular}
 \caption{Benchmark Test data of for loop transforms }
 \label{tab:for-tool-benchmark}
 \end{table}
+
+The \textit{modernize-loop-convert} implements a set of confidence levels, risky, reasonable and safe, which dictate if the loop body is safe enough to allow for the transformation of the loop. The risky confidence setting allows for loops to be transformed where methods of the container are called in the loop body, reasonable confidence allows the conversion of those containers which make calls to new \texttt{end()} or \texttt{size()}, similarly to the case shown in Figure \ref{fig:code-for-container}. Finally, the safe confidence level allows only the for-loops that do not have criteria that would place them in the other two levels.
+
+The testing of \textit{for-loop-rejuvenation} and \textit{modernise-loop-convert} was conducted on a set of real-world code sampled from existing SPEC 2017 CPU benchmarks. All the files utilised were designated pure C++ and were taken from 541.leela\_r~\cite{SPEC_LEELA}, 5531.deepsjeng\_r~\cite{SPEC_DEEPSJENG}, 523.xalancbmk\_r~\cite{SPEC_XALANCBMK} and 510.parest\_r~\cite{SPEC_PAREST} benchmarks. The results from the testing are displayed in Table~\ref{tab:for-tool-benchmark}. The columns denoting the number of converted for loops shows that both transforms have a low hit rate at transforming for-loops. This in no ways suggests the tools are defective or wrong, only that they are limited by the fact that most for-loops do not fit the template of ranged-based for-loops, at least not without completely changing the intended purpose of the loop. However, the test data does show that the impact the \textit{for-loop-rejuvenation} can have, in its current form, is limited as it may be too restrictive in selecting for-loops for transformation.
+
 
 % \begin{table}[]
 % \begin{tabular}{|l|l|l|l|l|l|}
@@ -1520,6 +1618,22 @@ parest\_r & auto\_derivative\_function & 343 & 26 & 0 & 0 \\ \hline
 
 A reason for the reduced transformation rate in the \textit{for-loop-rejuvenation} can be found in inspecting the for-loops in the files that are not being transformed. The file \textit{bitboard.cpp} in the \textit{deepsjeng} benchmark had a large number of for loop, 34, but a zero transformation rate, an example of one of its for loops is shown in Figure \ref{fig:code-untrans-example}. The example shows that it is impossible for the transformation to proceed as the loop does not have a single array as its focus but two. The \textit{bitboard} file faces this problem as nearly all its for-loops need to access multiple arrays of type \texttt{BITBOARD} to calculate results.
 
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Reason loop not transformed} & \textbf{Number of loops} \\ \hline
+Containers index \textgreater 1 & 1 \\ \hline
+Comparison of size not direct & 19 \\ \hline
+\begin{tabular}[c]{@{}l@{}}Size of array, passed\\  as  function argument\end{tabular} & 1 \\ \hline
+Other: unsafe loop body & 2 \\ \hline
+Other: loop header invalidation & 16 \\ \hline
+\end{tabular}
+\caption{Reason why for-loop were not transformed for the leela\_r benchmark files}
+\label{tab:res-for-loop-fail}
+\end{table}
+
+
 \begin{figure}[!ht]
     \centering
     \begin{minted}{C++}
@@ -1550,6 +1664,8 @@ The previous example showed the impracticality of the transformation in some cas
 
 % round off
 The examples of for-loops displayed above show that there are common patterns to their use and that those patterns, that can be transformed, could be added to the transformation, but capturing all possible patterns would be unfeasible and lead to an explosion in complexity. The current effectiveness of the for-loop-rejuvenation tool is lacking as can be seen from Table \ref{tab:for-tool-benchmark} and the examples above. To increase the effectiveness in a meaningful way an analysis of the most utilised pattern of for-loop use could find the uses like those in Figure \ref{fig:no-rejuv-indirect-var} and integrate them into the rejuvenation to build a more effective tool.
+
+
 
 \section{Summary}
 This chapter introduced the \textit{for-loop-rejuvenation} and explored the transforms set of rules for detecting for-loops and checking their safety. The transform aims to increase the readability and maintainability of for-loops by utilising the ranged-based for-loop construct introduced in C++11. Through testing and comparison to similar tools, it can be seen that the source code rejuvenation is limited in its effectiveness, as the number of possible loops to transforms is a subset of the total number of loops. The rejuvenation also suffers from an overly restrictive approach in selecting those remaining for-loops for transformation.
