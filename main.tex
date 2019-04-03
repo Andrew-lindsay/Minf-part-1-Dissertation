@@ -22,7 +22,9 @@
 \date{\today}
 
 \abstract{
-    
+The prevalence of legacy code throughout the software industry results in many costly problems in having to maintain and alter old but critical software. As programming languages evolve they introduce new features and standard library extensions that can be of benefit to old legacy code by increasing the readability of maintainability of the code. Introducing these new features into legacy code manually is a costly process in terms of developer time used and due to the chance of introducing errors into the existing code. The proposed solution featured in this report is automated source code rejuvenation, which aims to rejuvenate old code by replacing previously used idioms and workarounds with new language feature that raise the level of abstraction of the code to better express the programmers intent.
+
+This report focuses on two areas of rejuvenation, the promotion of type inference and the transformation of for-loops to utilises a more modern loop construct. The implementation of the two source code rejuvenation tools, \textit{auto-rejuvenation} and \textit{for-loop-rejuvenation}, is given along side evaluation of their effectiveness on real-world software examples. The rejuvenation tools are also contrasted with similar exiting tools, to emphasise different possible approaches to rejuvenation. In evaluating the source code rejuvenation tools, explanations for why the tools deviated from desired performance are given, along with possible solutions to improve their effectiveness.
 }
 
 \maketitle
@@ -34,7 +36,7 @@ Acknowledgements go here.
 
 %\pagenumbering{arabic}
 
-\chapter{Introduction} \label{Introduction}
+\chapter{Introduction} \label{chp:intro-report}
 
 \section{Overview}
 
@@ -645,7 +647,7 @@ It is at this stage in the process implicit casting of types can be checked. As 
             rhsExpression->isCompilerGenerated() )
         return;
     \end{minted}
-    \caption{Psuedocode of implicit casting check for uses of SgCastExpr}
+    \caption{Pseudocode of implicit casting check for uses of SgCastExpr}
     \label{fig:cast-check-code}
 \end{figure}
 
@@ -674,7 +676,7 @@ So to distinguish between the cases where nested types are used the framework pr
         assignNode->set_type( SgTemplateType("auto"))
     
     \end{minted}
-    \caption{Psuedocode for setting type of variable declaration}
+    \caption{Pseudocode for setting type of variable declaration}
     \label{fig:auto-cases-nested-types}
 \end{figure}
 
@@ -1592,11 +1594,9 @@ The following chapter provides a conclusion to the report, summarising the evalu
 \subsection{Discussion of auto-rejuvenation}
 
 % nice things 
-The first Source code rejuvenation featured in the report, \textit{auto-rejuvenation}, successfully 
+The first Source code rejuvenation featured in the report, \textit{auto-rejuvenation}, successfully implemented a rejuvenation of variable declarations, changing their type signatures to utilise type inference through the \texttt{auto} keyword where it thought appropriate. The rejuvenation tool was able to perform it's transformation automatically across the entire file passed to it, ensuring that the type that was inferred matched the previous type supplied by the programmer. It was able to ensure the correctness of the inferred type in the surrounding code by not removing type information which was present in the original type that \texttt{auto} could not infer on its own.
 
-(HERE)
-
-The \textit{auto-rejuvenation} transform featured some conceptual problems in its approach to performing its rejuvenation on variable declarations. A central problem identified when altering type signatures, to utilises the \texttt{auto} keyword, was that replacing the type could lead to harder to read code as information provided in the type, which could add context to the declaration, was being removed, Figure~\ref{fig:reduce-info-auto}. 
+The \textit{auto-rejuvenation} transform featured some conceptual problems in its approach to performing its rejuvenation on variable declarations. A central problem identified when altering type signatures was that replacing the type could lead to harder to read code as information provided in the type, which could add context to the declaration, was being removed, Figure~\ref{fig:reduce-info-auto}. 
 
 \begin{figure}[H]
     \centering
@@ -1631,6 +1631,8 @@ Another minor problem from over application of the \texttt{auto} keyword was tha
 The problems related to the over application of \textit{auto-rejuveantions}'s transform showed the complexity of designing effective transforms and how careful thought is required when selecting the code to be transformed. As C++ is not a dynamically typed language, so requires statically defined types, the types become a part of the style of writing C++, so to aimlessly apply the transform is not advised. The use of \texttt{auto} does offer the benefit of removing the verbose type signatures but a balance is required to produce the best possible outcome from transformation. 
 
 \subsection{Discussion of for-loop-rejuvenation}
+% nice things 
+The second rejuvenation of this report was \texttt{for-loop-rejuvenation} which was successfully able to detect, from the wider set of unsafe for-loops, three distinct for-loop categories which could be safely transformed to utilise ranged-based for-loop. It was capable of detecting a variety of loop headers that matched to each category of for-loops. The tool was also able to conduct spanning checks of the loop's body to ensure that that transformation of the header did not create errors in the loop body after the index variable or iterator, present in the loop's header, was transformed into a direct reference.  
 
 The \texttt{for-loop-rejuvenation} suffers from distinct problems from the previous transformations as its hit rate, even on a large sample set, is near zero. The first factor attributing to this reduction was that many of the main patterns of using for-loops were not captured by the rejuvenation tool. Further reducing the hit rate were the cases of for-loops that were impossible to transform to utilise the ranged-for construct as they did not feature a single array being completely traversed. Even though the second of the two factors is impossible to solve, the first factor does allow for some solutions to improve the hit rate, such as identifying the most utilised patterns of for-loops in real-world code and augment the code to transform them. The identification of the most common ways old features or idioms are used is an important technique which can be applied to a number of source code rejuvenations to increase their effectiveness.
 
@@ -1640,6 +1642,7 @@ The two previously mentions factors reducing the number of overall transformatio
 % changing code and ensuring it actual makes improvements requires measuring of readability and maintainability
 
 \subsection{Closing remarks}
+
 There are many pitfalls and misguided improvements that can occur when developing rejuvenations, such as over application of a transform or lack of actual improvement. So work needs to be done to ensure that a rejuvenation actually improves the final code, and important areas for transformations are not missed. It is also critical to check that the suggested benefits to the code like maintainability and readability are actually being realised. This requires a way to assess, with tangible metrics, the code before the transformation and after to be able to see improvements and to refrain from judging these aspects by developer intuition as this could boil down to personal preference. It is also clear from the source code rejuvenation seen in this report that in developing rejuvenations tools it is hard to balance the application of a transformation in terms of complexity and scope with the effective results, readability and maintainability, on the final source code produced. 
 
 % conclude with this statement
@@ -1650,7 +1653,7 @@ There are many pitfalls and misguided improvements that can occur when developin
 % extension for the for-loop-reju addition pre traversal pass to allow for better 
 
 \subsection{Extensions to current souce code rejuvenations}
-In the evaluation of the source code rejuvenations additional extensions were given for both the \textit{auto-rejuvenation} and  \textit{for-loop-rejuvenation}. It was suggested that the \textit{auto-rejuvenation} which was previously restricted to using \texttt{auto} on variable declarations also be allowed to utilise \texttt{auto} for the return type of the function declarations, Figure \ref{fig:funct-ret-inferred}.
+In the evaluation of the source code rejuvenations additional extensions were given for both the \textit{auto-rejuvenation} and  \textit{for-loop-rejuvenation}. It was suggested that the \textit{auto-rejuvenation} which was previously restricted to using \texttt{auto} on variable declarations also be allowed to utilise \texttt{auto} for the return type of the function declarations, Figure~\ref{fig:funct-ret-inferred}.
 
 The suggested extension to \textit{for-loop-rejuvenation} was the additional use of a wider range of patterns more in line with the programmer's actual uses of for-loops. This extension aims to improve the rate at which they would be transformed to use the ranged-for construct.
 
@@ -1659,7 +1662,7 @@ The suggested extension to \textit{for-loop-rejuvenation} was the additional use
 %  additional utilisation become available for the keywords between uses 
 
 \subsection{Additional source code rejuvenations}
-The number of possible rejuvenations even within the C++ language is much larger than the those discussed in this report. A further rejuvenation which could be implemented is the detection of user-defined list, Figure~\ref{fig:user-def-list}, and transform them use to utilise a standard library implementation such as \texttt{std::list}. The complexity of this source code rejuvenations lays in two areas, identifying an occurrence of a user-defined list and detecting the type of list it is. Identifying a user-defined linked list is more complicated than both of the rejuvenation tools discussed previously as the implementation of the list could be spread throughout the source file, and requires checking the definitions and several functions to see if the operations defined for the list are in line with those also provided by different standard library list implementations. As the ways to implement a list are very open-ended the transform would have to handle a very wide scope of definitions for a list as well as differentiating between doubly linked list, circular list and singly linked lists.
+The number of possible rejuvenations even within the C++ language is much larger than the those discussed in this report. A further rejuvenation which could be implemented is the detection of user-defined lists, Figure~\ref{fig:user-def-list}, and transformation to utilise a standard library implementation such as \texttt{std::list}. The complexity of this source code rejuvenations lays in two areas, identifying an occurrence of a user-defined list and detecting the type of list it is. Identifying a user-defined list is more complicated than both of the rejuvenation tools discussed previously as the implementation of the list could be spread throughout the source file, and requires checking the definitions and several functions to see if the operations defined for the list are in line with those also provided by different standard library list implementations. As the ways to implement a list are very open-ended the transform would have to handle a very wide scope of definitions for a list as well as differentiating between doubly linked list, circular list and singly linked lists.
 
 % example
 \begin{figure}[htb]
@@ -1680,17 +1683,17 @@ The number of possible rejuvenations even within the C++ language is much larger
     \label{fig:user-def-list}
 \end{figure}
 
-The transformation process for the uses of user-defined lists also introduces new challenges as the definition of the list could be in a different file from where it is being used. So the definition of the user-defined list is required to be known before traversing the source code file or files of the project to transform the instances where it is utilised, which will require an initial traversal through the project to know of its existence. Also when an instance of a variable using the user-defined list can be replaced with standard library implementation, then all further use of the list also needs to be transformed to utilise the functions defined for the standard library's interface. This type of traversal is even more spanning than the localised case of the for-loop-rejuvenation which was restricted to loop body.
+The transformation process for the uses of user-defined lists also introduces new challenges as the definition of the list could be in a different file from where it is being used. So the definition of the user-defined list is required to be known before traversing the source code file or files of the project to transform the instances where it is utilised. This will require an initial traversal through the project to know of list implementations existence. Also when an instance of a variable using the user-defined list can be replaced with standard library implementation, then all further use of the list also needs to be transformed to utilise the functions defined for the standard library's interface. This type of traversal is even more spanning than the localised case of the \textit{for-loop-rejuvenation} which was confined to loop body.
 
-The benefits of rejuvenating user-defined lists are the well documented interfaces for standard library implementations which means that developer will not have to search for and try to understand those implement in the old code which could lack useful documentation. The standard library implementations also offer tried and tested implementations which are significantly less likely to include bugs than those found in unmaintained code.
+The benefits of rejuvenating user-defined lists are the well-documented interfaces for standard library implementations which means that developer will not have to search for and try to understand those implement in the old code which could lack useful documentation. The standard library implementations also offer tried and tested implementations which are significantly less likely to include bugs than those found in unmaintained code, while also offering performance improvements as the standards library implementations have been finely tuned over time.
 
 \subsection{Developing future rejuvenations}
 
-One of the main difficulties of implementing source code rejuvenation in frameworks like the Rose compiler is the verbose way required to match against segments of the AST. As can be seen in the implementation sections of source code rejuvenations produced in this report, searching for matching AST subtree requires checking each node for the correct type, requiring \texttt{NULL} checks and calls to subsequent child nodes. When using this approach, altering the code to allow for a more variation in the matching of the AST (e.g matching multiple types of variable declarations) results in a large amount of additional type of node checks as well as complex conditional if logic. 
+One of the main difficulties of implementing source code rejuvenation in frameworks like the Rose compiler is the verbose way required to match against segments of the AST. As can be seen in the implementation sections of source code rejuvenations produced in this report, searching for matching AST subtrees requires checking each node for the correct type, requiring \texttt{NULL} checks and calls to subsequent child nodes. When using this approach, altering the code to allow for a more variation in the matching of the AST (e.g matching multiple types of variable declarations) results in a large amount of additional type-of-node checks as well as complex conditional if logic. 
 
 There is a desire to remove this requirement in having to detect target AST subtrees by matching individual nodes directly as it is more of an implementation detail than directly connected to the rejuvenation which is trying to be implemented. There has been attempts to make the matching of AST subtrees or even individual nodes easier, clang's AST matchers~\cite{CLANG_MATCH_AST} and Rose AST query interface~\cite{ROSE_TUT_AST_QUERY}, but neither are directly focused at aiding source code rejuvenation. 
 
-A solution to the problem could utilise a system similar to regular expressions for matching text~\cite{Aho:1992:FCS:114768} but with the of matching AST nodes as shown in  Figure \ref{fig:adv-ast-matching}. The textual representation could utilise variables which are then matched in the underlying implementation, so, for example, the text used in Figure \ref{fig:adv-ast-matching} could match against all for-loops which have the same variable across all component which is labelled as \$i. The implementation could be able to handle other constructs like all nodes that equate to number values such as \textit{SgIntVal}, \textit{SgLongVal} etc by referencing some placeholder like \$NUMBER. The intention of the code below would be to return a list of for-loop nodes matching the pattern which could then be used as a starting point to begin the transformation.
+A solution to the problem could utilise a system similar to regular expressions for matching text~\cite{Aho:1992:FCS:114768} but with the matching of AST nodes as shown in  Figure \ref{fig:adv-ast-matching}. The textual representation could utilise variables which are then matched in the underlying implementation, so, for example, the text used in Figure \ref{fig:adv-ast-matching} could match against all for-loops which have the same variable across all component which is labelled as \$i. The implementation could be able to handle other constructs like all nodes that equate to number values such as \textit{SgIntVal}, \textit{SgLongVal} etc by referencing some placeholder like \$NUMBER. The intention of the code below would be to return a list of for-loop nodes matching the pattern which could then be used as a starting point to begin the transformation.
 
  \begin{figure}[H]
     \centering
@@ -1703,7 +1706,7 @@ A solution to the problem could utilise a system similar to regular expressions 
     \label{fig:adv-ast-matching}
 \end{figure}
 
-The use of a higher level interface for pattern matching on the AST removes a lot of the tediousness in trying to detect a pattern, allowing for the focus to be on the transformation at hand. The text interface lends its self to quick prototyping unlike the large scale changes need to check every new node in a pattern, meaning the turn around time in testing which patterns actually results in the highest hit rate on real-world code. Even though the implementation details would be a large undertaking it is clear that the system or a similar one would be of great benefit to the creation of rejuvenations.
+The use of a higher level interface for pattern matching on the AST removes a lot of the tediousness in trying to detect a pattern, allowing for the focus to be on the transformation at hand. The text interface lends its self to quick prototyping unlike the large scale changes needed to check every new node in a pattern, meaning the turn around time in testing which patterns actually results in the highest hit rate on real-world code can be reduced. Even though the implementation details would be a large undertaking it is clear that the system or a similar one would be of great benefit to the creation of rejuvenation tools.
 
 % simple extensions
     % reference the chapters and explain
